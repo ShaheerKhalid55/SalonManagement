@@ -8,3 +8,5 @@ __pycache__/
 .vscode/
 .idea/
 alembic/versions/*.py
+frontend/node_modules/
+.expo/
