@@ -3,6 +3,10 @@
     "name": "Salon Management",
     "slug": "salon-management",
     "version": "1.0.0",
+    "android": {
+      "package": "com.shaheer.salonmanagement",
+      "softwareKeyboardLayoutMode": "resize"
+    },
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "scheme": "salonmanagement",
@@ -10,6 +14,12 @@
       "expo-router",
       "expo-secure-store",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d13cc042-f487-4f83-bf05-d6a55fc6471c"
+      }
+    }
   }
 }

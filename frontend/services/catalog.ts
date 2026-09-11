@@ -89,6 +89,11 @@ export async function getSalons() {
   return data;
 }
 
+export async function getSalon(salonId: number) {
+  const { data } = await api.get<Salon>(`/salons/${salonId}`);
+  return data;
+}
+
 export async function getServices(salonId?: number) {
   const { data } = await api.get<Service[]>("/services", {
     params: salonId ? { salon_id: salonId } : undefined,

@@ -1,49 +1,225 @@
-import React,{useCallback,useEffect,useMemo,useState} from "react";
-import {ActivityIndicator,Alert,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from "react-native";
-import {router} from "expo-router";
-import {Ionicons} from "@expo/vector-icons";
-import {Screen} from "@/components/Screen";
-import {Bundle,getBundles,getSalons,getServices,Salon,Service} from "@/services/catalog";
-import {getApiErrorMessage} from "@/lib/api";
-import {colors,radius,shadows} from "@/constants/theme";
-const money=(v:unknown)=>`PKR ${Number(v??0).toLocaleString("en-PK",{minimumFractionDigits:0,maximumFractionDigits:2})}`;
-const iconFor=(c:string):keyof typeof Ionicons.glyphMap=>{const x=c.toLowerCase();if(x.includes("hair"))return "cut-outline";if(x.includes("nail"))return "hand-left-outline";if(x.includes("make"))return "color-palette-outline";if(x.includes("skin")||x.includes("facial"))return "sparkles-outline";if(x.includes("body"))return "flower-outline";return "sparkles-outline"};
-export default function ServicesScreen(){
- const [salons,setSalons]=useState<Salon[]>([]),[salonId,setSalonId]=useState<number>(),[services,setServices]=useState<Service[]>([]),[bundles,setBundles]=useState<Bundle[]>([]),[loading,setLoading]=useState(true),[search,setSearch]=useState(""),[category,setCategory]=useState("All"),[selectedServices,setSelectedServices]=useState<number[]>([]),[selectedBundle,setSelectedBundle]=useState<number>(),[summaryExpanded,setSummaryExpanded]=useState(true);
- const load=useCallback(async(id?:number)=>{try{setLoading(true);const list=salons.length?salons:await getSalons();if(!salons.length)setSalons(list);const sid=id??salonId??list[0]?.id;setSalonId(sid);setSelectedServices([]);setSelectedBundle(undefined);setSummaryExpanded(true);if(sid){const [s,b]=await Promise.all([getServices(sid),getBundles(sid)]);setServices(s);setBundles(b)}}catch(e){Alert.alert("Services",getApiErrorMessage(e))}finally{setLoading(false)}},[salonId,salons]);
- useEffect(()=>{load()},[]);
- const categories=useMemo(()=>["All",...Array.from(new Set(services.map(s=>s.category).filter(Boolean)))],[services]);
- const filtered=useMemo(()=>{const q=search.trim().toLowerCase();return services.filter(s=>(category==="All"||s.category===category)&&(!q||`${s.name} ${s.description??""} ${s.category}`.toLowerCase().includes(q)))},[services,category,search]);
- const selectedServiceItems=services.filter(s=>selectedServices.includes(s.id));
- const selectedBundleItem=bundles.find(b=>b.id===selectedBundle);
- const selectedCount=selectedServiceItems.length+(selectedBundleItem?1:0);
- const selectedTotal=selectedBundleItem?Number(selectedBundleItem.bundle_price):selectedServiceItems.reduce((sum,s)=>sum+Number(s.price||0),0);
- const hasSelection=selectedCount>0;
- const toggleService=(id:number)=>{setSelectedBundle(undefined);setSelectedServices(current=>current.includes(id)?current.filter(x=>x!==id):[...current,id]);};
- const selectBundle=(id:number)=>{setSelectedServices([]);setSelectedBundle(current=>current===id?undefined:id);};
- const removeSelection=(type:"service"|"bundle",id:number)=>type==="service"?setSelectedServices(current=>current.filter(x=>x!==id)):setSelectedBundle(undefined);
- const go=()=>{if(!hasSelection||!salonId)return;const name=selectedBundleItem?.name??selectedServiceItems.map(s=>s.name).join(" + ");router.push({pathname:"/booking",params:{salonId:String(salonId),...(selectedBundleItem?{bundleId:String(selectedBundleItem.id)}:{serviceIds:selectedServices.join(",")}),name,price:String(selectedTotal)}})};
- return <Screen><View style={styles.screen}><ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-  <View style={styles.hero}><View style={{flex:1}}><Text style={styles.kicker}>THE SALON MENU</Text><Text style={styles.title}>Choose your service</Text><Text style={styles.subtitle}>Find your perfect treatment, then pick your date and time.</Text></View><View style={styles.heroIcon}><Ionicons name="sparkles" size={22} color={colors.champagne}/></View></View>
-  {salons.length>1&&<View style={styles.salonSection}><Text style={styles.label}>YOUR SALON</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gap}>{salons.map(s=><Pressable key={s.id} onPress={()=>{setCategory("All");setSearch("");load(s.id)}} style={[styles.salonChip,s.id===salonId&&styles.salonActive]}><Ionicons name="location-outline" size={15} color={s.id===salonId?colors.champagneLight:colors.plum}/><Text style={[styles.salonText,s.id===salonId&&styles.salonTextActive]}>{s.name}</Text></Pressable>)}</ScrollView></View>}
-  <View style={styles.searchBox}><Ionicons name="search-outline" size={19} color={colors.muted}/><TextInput value={search} onChangeText={setSearch} placeholder="Search services..." placeholderTextColor="#A49BA2" style={styles.searchInput}/>{search?<Pressable onPress={()=>setSearch("")}><Ionicons name="close-circle" size={18} color={colors.muted}/></Pressable>:null}</View>
-  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroller}>{categories.map(item=>{const active=item===category;return <Pressable key={item} onPress={()=>setCategory(item)} style={[styles.categoryChip,active&&styles.categoryActive]}><Ionicons name={item==="All"?"grid-outline":iconFor(item)} size={15} color={active?colors.champagneLight:colors.plum}/><Text style={[styles.categoryText,active&&styles.categoryTextActive]}>{item}</Text></Pressable>})}</ScrollView>
-  {loading?<View style={styles.loading}><ActivityIndicator color={colors.plum}/><Text style={styles.hint}>Preparing the salon menu...</Text></View>:null}
-  {!loading&&bundles.length>0&&category==="All"&&!search&&<View><View style={styles.sectionHeader}><View><Text style={styles.sectionTitle}>Signature packages</Text><Text style={styles.sectionSubtitle}>Curated combinations with more value.</Text></View><View style={styles.goldDot}><Ionicons name="sparkles" size={14} color={colors.plum}/></View></View><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bundleScroller}>{bundles.map(b=>{const active=selectedBundle===b.id;return <Pressable key={b.id} onPress={()=>selectBundle(b.id)} style={[styles.bundleCard,active&&styles.bundleCardActive]}><View style={styles.bundleTop}><View style={styles.bundleIcon}><Ionicons name="gift-outline" size={19} color={colors.champagne}/></View><Text style={styles.bestValue}>BEST VALUE</Text></View><Text style={styles.bundleName}>{b.name}</Text><Text style={styles.bundleDescription} numberOfLines={2}>{b.description||b.services.map(s=>s.name).join(" + ")}</Text><View style={styles.bundleServices}>{b.services.slice(0,3).map(s=><View key={s.id} style={styles.miniTag}><Text style={styles.miniTagText}>{s.name}</Text></View>)}</View><View style={styles.bundleBottom}><View><Text style={styles.bundlePrice}>{money(b.bundle_price)}</Text><Text style={styles.saveText}>Save {money(b.discount)}</Text></View><View style={[styles.chooseCircle,active&&styles.chooseCircleActive]}><Ionicons name={active?"checkmark":"arrow-forward"} size={16} color={active?colors.plum:colors.champagne}/></View></View></Pressable>})}</ScrollView></View>}
-  <View style={styles.sectionHeader}><View><Text style={styles.sectionTitle}>{category==="All"?"All services":category}</Text><Text style={styles.sectionSubtitle}>{filtered.length} treatment{filtered.length===1?"":"s"} available</Text></View></View>
-  {!loading&&filtered.length===0&&<View style={styles.empty}><View style={styles.emptyIcon}><Ionicons name="search-outline" size={24} color={colors.plum}/></View><Text style={styles.emptyTitle}>No services found</Text><Text style={styles.hint}>Try another category or search term.</Text></View>}
-  {filtered.map(s=>{const active=selectedServices.includes(s.id);return <Pressable key={s.id} onPress={()=>toggleService(s.id)} style={[styles.serviceCard,active&&styles.serviceActive]}><View style={[styles.serviceIcon,active&&styles.serviceIconActive]}><Ionicons name={iconFor(s.category)} size={22} color={active?colors.champagne:colors.plum}/></View><View style={styles.serviceCopy}><View style={styles.serviceTitleRow}><Text style={styles.serviceName}>{s.name}</Text>{active?<Ionicons name="checkmark-circle" size={20} color={colors.champagne}/>:null}</View><Text style={styles.serviceMeta}>{s.category} · {s.duration_minutes} min</Text>{s.description?<Text style={styles.serviceDescription} numberOfLines={2}>{s.description}</Text>:null}<View style={styles.priceRow}><Text style={styles.price}>{money(s.price)}</Text><Text style={styles.perVisit}>per visit</Text></View></View><View style={[styles.arrowButton,active&&styles.arrowActive]}><Ionicons name={active?"checkmark":"chevron-forward"} size={17} color={colors.plum}/></View></Pressable>})}
-  <View style={{height:hasSelection?(summaryExpanded?285:105):20}}/>
- </ScrollView>{hasSelection&&<View style={styles.selectionBar}>
-   <Pressable onPress={()=>setSummaryExpanded(v=>!v)} style={styles.selectionHeader}>
-     <View style={styles.selectionHeaderLeft}><View style={styles.countBadge}><Text style={styles.countBadgeText}>{selectedCount}</Text></View><Text style={styles.selectionHeaderTitle}>{selectedCount===1?"service":"services"} selected</Text></View>
-     <View style={styles.selectionHeaderRight}><Text style={styles.totalLabel}>Total: <Text style={styles.totalValue}>{money(selectedTotal)}</Text></Text><View style={styles.collapseButton}><Ionicons name={summaryExpanded?"chevron-down":"chevron-up"} size={18} color={colors.champagneLight}/></View></View>
-   </Pressable>
-   {summaryExpanded&&<View style={styles.selectionList}>
-     {selectedServiceItems.map(item=><View key={`service-${item.id}`} style={styles.selectionRow}><Ionicons name="reorder-three-outline" size={18} color={colors.champagneLight}/><Text style={styles.selectionItemName} numberOfLines={1}>{item.name}</Text><Text style={styles.selectionItemMeta}>· {item.duration_minutes} min</Text><Text style={styles.selectionItemPrice}>{money(item.price)}</Text><Pressable onPress={()=>removeSelection("service",item.id)} style={styles.removeButton}><Ionicons name="trash-outline" size={16} color="#FF7A7A"/></Pressable></View>)}
-     {selectedBundleItem ? (<View style={styles.selectionRow}><Ionicons name="gift-outline" size={18} color={colors.champagneLight}/><Text style={styles.selectionItemName} numberOfLines={1}>{selectedBundleItem.name}</Text><Text style={styles.selectionItemMeta}>· {selectedBundleItem.duration_minutes} min</Text><Text style={styles.selectionItemPrice}>{money(selectedBundleItem.bundle_price)}</Text><Pressable onPress={()=>removeSelection("bundle",selectedBundleItem.id)} style={styles.removeButton}><Ionicons name="trash-outline" size={16} color="#FF7A7A"/></Pressable></View>) : null}
-   </View>}
-   <Pressable onPress={go} style={styles.continueButton}><Text style={styles.continueText}>Choose date</Text><Ionicons name="arrow-forward" size={18} color={colors.plum}/></Pressable>
- </View>}</View></Screen>;
+import React, { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { Screen } from "@/components/Screen";
+import { getSalons, Salon } from "@/services/catalog";
+import { getApiErrorMessage } from "@/lib/api";
+import { colors, radius, shadows } from "@/constants/theme";
+
+const salonIcon = (index: number): keyof typeof Ionicons.glyphMap => {
+  const icons: (keyof typeof Ionicons.glyphMap)[] = ["sparkles-outline", "cut-outline", "flower-outline", "color-palette-outline"];
+  return icons[index % icons.length];
+};
+
+export default function ServicesScreen() {
+  const [salons, setSalons] = useState<Salon[]>([]);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All Salons");
+  const [loading, setLoading] = useState(true);
+  const [selectedSalonIds, setSelectedSalonIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        setSalons(await getSalons());
+      } catch (e) {
+        Alert.alert("Services", getApiErrorMessage(e));
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const toggleCompare = (salonId: number) => {
+    setSelectedSalonIds((current) => current.includes(salonId) ? current.filter((id) => id !== salonId) : current.length < 2 ? [...current, salonId] : current);
+  };
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return salons.filter((salon) => {
+      const haystack = `${salon.name} ${salon.city ?? ""} ${salon.address_line1 ?? ""} ${salon.description ?? ""}`.toLowerCase();
+      const matchesSearch = !q || haystack.includes(q);
+      if (filter === "Nearby") return matchesSearch; // Distance can be added when location is available.
+      return matchesSearch;
+    });
+  }, [salons, search, filter]);
+
+  return (
+    <Screen>
+      <View style={styles.screen}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+          <View style={styles.headerRow}>
+            <View style={styles.headerCopy}>
+              {/* <Text style={styles.kicker}>THE SALON MENU</Text> */}
+              <Text style={styles.title}>Services</Text>
+              {/* <Text style={styles.subtitle}>Choose a salon to explore its services and exclusive bundles.</Text> */}
+            </View>
+            {/* <View style={styles.headerIcon}>
+              <Ionicons name="sparkles" size={22} color={colors.champagne} />
+            </View> */}
+          </View>
+
+          <Text style={styles.sectionTitle}>Choose a salon</Text>
+          <Text style={styles.sectionSubtitle}>Select a salon to view services and bundles</Text>
+
+          <View style={styles.searchBox}>
+            <Ionicons name="search-outline" size={20} color={colors.muted} />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search salon name, location..."
+              placeholderTextColor="#A49BA2"
+              style={styles.searchInput}
+              returnKeyType="search"
+            />
+            {search.length > 0 && (
+              <Pressable onPress={() => setSearch("")} hitSlop={8}>
+                <Ionicons name="close-circle" size={19} color={colors.muted} />
+              </Pressable>
+            )}
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+            {["All Salons"].map((item) => {
+              const active = filter === item;
+              return (
+                <Pressable key={item} onPress={() => setFilter(item)} style={[styles.filterChip, active && styles.filterChipActive]}>
+                  <Text style={[styles.filterText, active && styles.filterTextActive]}>{item}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          {loading ? (
+            <View style={styles.loading}>
+              <ActivityIndicator color={colors.plum} />
+              <Text style={styles.loadingText}>Finding salons...</Text>
+            </View>
+          ) : filtered.length === 0 ? (
+            <View style={styles.empty}>
+              <View style={styles.emptyIcon}><Ionicons name="search-outline" size={24} color={colors.plum} /></View>
+              <Text style={styles.emptyTitle}>No salons found</Text>
+              <Text style={styles.emptyText}>Try another salon name or location.</Text>
+            </View>
+          ) : (
+            <View style={styles.list}>
+              {filtered.map((salon, index) => (
+                <View key={salon.id} style={[styles.salonCard, selectedSalonIds.includes(salon.id) && styles.salonCardSelected]}>
+                  <Pressable onPress={() => router.push(`/salon/${salon.id}`)} style={({ pressed }) => [styles.salonMain, pressed && styles.pressed]}>
+                  <View style={styles.salonVisual}>
+                    <Ionicons name={salonIcon(index)} size={32} color={colors.plum} />
+                    <View style={styles.openBadge}>
+                      <View style={styles.openDot} />
+                      <Text style={styles.openText}>Open</Text>
+                    </View>
+                  </View>
+                  <View style={styles.salonBody}>
+                    <View style={styles.nameRow}>
+                      <Text style={styles.salonName} numberOfLines={2}>{salon.name}</Text>
+                      <View style={styles.rating}><Ionicons name="star" size={12} color={colors.champagne} /><Text style={styles.ratingText}>4.8</Text></View>
+                    </View>
+                    <View style={styles.locationRow}>
+                      <Ionicons name="location-outline" size={14} color={colors.muted} />
+                      <Text style={styles.location} numberOfLines={1}>{salon.city || salon.address_line1 || "Location available"}</Text>
+                    </View>
+                    <Text style={styles.categories} numberOfLines={1}>Hair  ·  Skin  ·  Nails  ·  Makeup</Text>
+                    <View style={styles.cardFooter}>
+                      <View style={styles.tag}><Text style={styles.tagText}>Popular</Text></View>
+                      {/* <Text style={styles.viewText}>View services</Text> */}
+                      <Ionicons name="arrow-forward" size={17} color={colors.plum} />
+                    </View>
+                  </View>
+                  </Pressable>
+                  <Pressable onPress={() => toggleCompare(salon.id)} style={[styles.compareButton, selectedSalonIds.includes(salon.id) && styles.compareButtonActive]}>
+                    <Ionicons name={selectedSalonIds.includes(salon.id) ? "checkmark-circle" : "git-compare-outline"} size={15} color={selectedSalonIds.includes(salon.id) ? colors.white : colors.plum} />
+                    <Text style={[styles.compareButtonText, selectedSalonIds.includes(salon.id) && styles.compareButtonTextActive]}>Compare</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {selectedSalonIds.length > 0 ? (
+            <View style={styles.compareBar}>
+              <View style={styles.compareBarIcon}><Ionicons name="git-compare-outline" size={20} color={colors.plum} /></View>
+              <View style={styles.compareBarCopy}><Text style={styles.compareBarTitle}>{selectedSalonIds.length} salon{selectedSalonIds.length > 1 ? "s" : ""} selected</Text><Text style={styles.compareBarSubtitle}>{selectedSalonIds.length < 2 ? "Select one more salon to compare" : "Compare these two salons"}</Text></View>
+              <Pressable disabled={selectedSalonIds.length < 2} onPress={() => router.push({ pathname: "/compare", params: { salonIds: selectedSalonIds.join(",") } })} style={[styles.compareGo, selectedSalonIds.length < 2 && styles.compareGoDisabled]}><Text style={styles.compareGoText}>Compare</Text></Pressable>
+            </View>
+          ) : null}
+
+          <Pressable style={styles.dealsCard} onPress={() => filtered[0] && router.push(`/salon/${filtered[0].id}`)}>
+            <View style={styles.dealsIcon}><Ionicons name="pricetag-outline" size={22} color={colors.champagneLight} /></View>
+            <View style={styles.dealsCopy}><Text style={styles.dealsTitle}>Deals & Offers</Text><Text style={styles.dealsSubtitle}>Explore salon packages and discounts</Text></View>
+            <Ionicons name="chevron-forward" size={23} color={colors.plum} />
+          </Pressable>
+        </ScrollView>
+      </View>
+    </Screen>
+  );
 }
-const styles=StyleSheet.create({screen:{flex:1},content:{paddingTop:18,paddingBottom:30},hero:{flexDirection:"row",alignItems:"flex-start",marginBottom:18},kicker:{color:colors.champagne,fontSize:9,fontWeight:"900",letterSpacing:1.5},title:{color:colors.ink,fontSize:28,fontWeight:"900",marginTop:4},subtitle:{color:colors.muted,fontSize:13,lineHeight:19,marginTop:5,maxWidth:315},heroIcon:{width:48,height:48,borderRadius:17,backgroundColor:colors.plum,alignItems:"center",justifyContent:"center",marginLeft:10},salonSection:{marginBottom:16},label:{color:colors.muted,fontSize:9,fontWeight:"900",letterSpacing:1.1,marginBottom:8},gap:{gap:8},salonChip:{height:42,paddingHorizontal:13,borderRadius:15,backgroundColor:colors.white,borderWidth:1,borderColor:colors.border,flexDirection:"row",alignItems:"center",gap:6},salonActive:{backgroundColor:colors.plum,borderColor:colors.plum},salonText:{color:colors.plum,fontSize:12,fontWeight:"800"},salonTextActive:{color:colors.white},searchBox:{height:52,borderRadius:17,backgroundColor:colors.white,borderWidth:1,borderColor:colors.border,flexDirection:"row",alignItems:"center",paddingHorizontal:15,...shadows.card},searchInput:{flex:1,color:colors.ink,fontSize:13,marginLeft:9,paddingVertical:0},categoryScroller:{gap:8,paddingVertical:15},categoryChip:{height:39,paddingHorizontal:13,borderRadius:14,backgroundColor:colors.ivoryDeep,borderWidth:1,borderColor:colors.border,flexDirection:"row",alignItems:"center",gap:6},categoryActive:{backgroundColor:colors.plum,borderColor:colors.plum},categoryText:{color:colors.plum,fontSize:11,fontWeight:"800"},categoryTextActive:{color:colors.champagneLight},loading:{minHeight:150,alignItems:"center",justifyContent:"center",gap:9},hint:{color:colors.muted,fontSize:12,lineHeight:18,textAlign:"center"},sectionHeader:{flexDirection:"row",alignItems:"center",justifyContent:"space-between",marginTop:8,marginBottom:12},sectionTitle:{color:colors.ink,fontSize:18,fontWeight:"900"},sectionSubtitle:{color:colors.muted,fontSize:11,marginTop:3},goldDot:{width:32,height:32,borderRadius:12,backgroundColor:colors.champagneLight,alignItems:"center",justifyContent:"center"},bundleScroller:{gap:12,paddingBottom:7},bundleCard:{width:286,minHeight:205,backgroundColor:colors.plum,borderRadius:radius.xl,padding:17,...shadows.card},bundleCardActive:{borderWidth:2,borderColor:colors.champagne,padding:15},bundleTop:{flexDirection:"row",alignItems:"center"},bundleIcon:{width:36,height:36,borderRadius:12,backgroundColor:colors.plumSoft,alignItems:"center",justifyContent:"center"},bestValue:{color:colors.champagneLight,fontSize:8,fontWeight:"900",letterSpacing:1,marginLeft:8},bundleName:{color:colors.white,fontSize:17,fontWeight:"900",marginTop:12},bundleDescription:{color:"#D8CADC",fontSize:11,lineHeight:16,marginTop:3},bundleServices:{flexDirection:"row",gap:5,marginTop:10},miniTag:{backgroundColor:"#3C2649",borderRadius:7,paddingHorizontal:7,paddingVertical:4},miniTagText:{color:"#E9DDEB",fontSize:8,fontWeight:"700"},bundleBottom:{flexDirection:"row",alignItems:"flex-end",justifyContent:"space-between",marginTop:13},bundlePrice:{color:colors.champagneLight,fontSize:16,fontWeight:"900"},saveText:{color:"#C9B8CD",fontSize:9,marginTop:2},chooseCircle:{width:36,height:36,borderRadius:13,backgroundColor:colors.plumSoft,alignItems:"center",justifyContent:"center"},chooseCircleActive:{backgroundColor:colors.champagne},serviceCard:{backgroundColor:colors.white,borderRadius:radius.lg,padding:14,marginBottom:10,flexDirection:"row",alignItems:"center",borderWidth:1,borderColor:colors.border,...shadows.card},serviceActive:{borderColor:colors.champagne,backgroundColor:"#FFFDF8"},serviceIcon:{width:48,height:58,borderRadius:16,backgroundColor:colors.ivoryDeep,alignItems:"center",justifyContent:"center",marginRight:12},serviceIconActive:{backgroundColor:colors.plum},serviceCopy:{flex:1,paddingRight:7},serviceTitleRow:{flexDirection:"row",alignItems:"center",justifyContent:"space-between",gap:6},serviceName:{color:colors.ink,fontSize:14,fontWeight:"900",flex:1},serviceMeta:{color:colors.muted,fontSize:10,marginTop:4,textTransform:"capitalize"},serviceDescription:{color:colors.muted,fontSize:10,lineHeight:15,marginTop:5},priceRow:{flexDirection:"row",alignItems:"baseline",gap:5,marginTop:6},price:{color:colors.plum,fontSize:14,fontWeight:"900"},perVisit:{color:colors.muted,fontSize:8},arrowButton:{width:34,height:34,borderRadius:12,backgroundColor:colors.ivoryDeep,alignItems:"center",justifyContent:"center"},arrowActive:{backgroundColor:colors.champagneLight},empty:{backgroundColor:colors.white,borderRadius:radius.xl,borderWidth:1,borderColor:colors.border,padding:28,alignItems:"center"},emptyIcon:{width:54,height:54,borderRadius:18,backgroundColor:colors.ivoryDeep,alignItems:"center",justifyContent:"center",marginBottom:10},emptyTitle:{color:colors.ink,fontSize:16,fontWeight:"900",marginBottom:4},selectionBar:{position:"absolute",left:0,right:0,bottom:0,backgroundColor:colors.plum,borderTopLeftRadius:24,borderTopRightRadius:24,paddingHorizontal:14,paddingTop:10,paddingBottom:14,...shadows.card},selectionHeader:{minHeight:48,flexDirection:"row",alignItems:"center",justifyContent:"space-between"},selectionHeaderLeft:{flexDirection:"row",alignItems:"center",gap:9,flex:1},countBadge:{width:28,height:28,borderRadius:10,backgroundColor:colors.champagneLight,alignItems:"center",justifyContent:"center"},countBadgeText:{color:colors.plum,fontSize:13,fontWeight:"900"},selectionHeaderTitle:{color:colors.white,fontSize:13,fontWeight:"900"},selectionHeaderRight:{flexDirection:"row",alignItems:"center",gap:9},totalLabel:{color:colors.white,fontSize:12,fontWeight:"800"},totalValue:{color:colors.champagneLight},collapseButton:{width:34,height:34,borderRadius:11,backgroundColor:colors.plumSoft,borderWidth:1,borderColor:"#684A72",alignItems:"center",justifyContent:"center"},selectionList:{borderTopWidth:1,borderTopColor:"#4A3157",paddingVertical:5},selectionRow:{minHeight:40,flexDirection:"row",alignItems:"center",borderBottomWidth:1,borderBottomColor:"#4A3157",gap:7},selectionItemName:{color:colors.white,fontSize:12,fontWeight:"800",flexShrink:1},selectionItemMeta:{color:"#CDBDD1",fontSize:10},selectionItemPrice:{color:colors.white,fontSize:11,fontWeight:"900",marginLeft:"auto"},removeButton:{width:30,height:30,borderRadius:9,alignItems:"center",justifyContent:"center",marginLeft:2},continueButton:{minHeight:48,paddingHorizontal:15,borderRadius:16,backgroundColor:colors.champagneLight,flexDirection:"row",alignItems:"center",justifyContent:"center",gap:8,marginTop:10},continueText:{color:colors.plum,fontSize:12,fontWeight:"900"}});
+
+const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  content: { paddingTop: 18, paddingBottom: 28 },
+  headerRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 25 },
+  headerCopy: { flex: 1, paddingRight: 12 },
+  kicker: { color: colors.champagne, fontSize: 10, fontWeight: "900", letterSpacing: 1.6 },
+  title: { color: colors.ink, fontSize: 30, fontWeight: "900", marginTop: 5 },
+  subtitle: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 5 },
+  headerIcon: { width: 48, height: 48, borderRadius: 17, backgroundColor: colors.plum, alignItems: "center", justifyContent: "center" },
+  sectionTitle: { color: colors.ink, fontSize: 21, fontWeight: "900" },
+  sectionSubtitle: { color: colors.muted, fontSize: 12, marginTop: 4, marginBottom: 14 },
+  searchBox: { height: 53, borderRadius: 17, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, flexDirection: "row", alignItems: "center", paddingHorizontal: 15, ...shadows.card },
+  searchInput: { flex: 1, color: colors.ink, fontSize: 13, marginLeft: 9, paddingVertical: 0 },
+  filters: { gap: 8, paddingVertical: 15 },
+  filterChip: { height: 39, paddingHorizontal: 15, borderRadius: 14, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, justifyContent: "center" },
+  filterChipActive: { backgroundColor: colors.plum, borderColor: colors.plum },
+  filterText: { color: colors.plum, fontSize: 11, fontWeight: "800" },
+  filterTextActive: { color: colors.white },
+  list: { gap: 12 },
+  salonCard: { backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: 10, ...shadows.card },
+  salonCardSelected: { borderColor: colors.plum, borderWidth: 1.5 },
+  salonMain: { flexDirection: "row" },
+  pressed: { opacity: 0.88, transform: [{ scale: 0.995 }] },
+  compareButton: { height: 34, borderRadius: 11, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.ivoryDeep, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8 },
+  compareButtonActive: { backgroundColor: colors.plum, borderColor: colors.plum },
+  compareButtonText: { color: colors.plum, fontSize: 9, fontWeight: "900" },
+  compareButtonTextActive: { color: colors.white },
+  compareBar: { backgroundColor: colors.white, borderRadius: 18, borderWidth: 1, borderColor: colors.plum, padding: 10, flexDirection: "row", alignItems: "center", marginTop: 14, marginBottom: 12, ...shadows.card },
+  compareBarIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: colors.ivoryDeep, alignItems: "center", justifyContent: "center" },
+  compareBarCopy: { flex: 1, paddingHorizontal: 10 },
+  compareBarTitle: { color: colors.ink, fontSize: 11, fontWeight: "900" },
+  compareBarSubtitle: { color: colors.muted, fontSize: 8, marginTop: 3 },
+  compareGo: { height: 36, paddingHorizontal: 13, borderRadius: 11, backgroundColor: colors.plum, alignItems: "center", justifyContent: "center" },
+  compareGoDisabled: { opacity: 0.45 },
+  compareGoText: { color: colors.white, fontSize: 9, fontWeight: "900" },
+  salonVisual: { width: 116, minHeight: 150, borderRadius: 18, backgroundColor: colors.ivoryDeep, alignItems: "center", justifyContent: "center", position: "relative" },
+  openBadge: { position: "absolute", left: 8, bottom: 8, backgroundColor: "#EEF8F1", borderRadius: 9, paddingHorizontal: 8, paddingVertical: 5, flexDirection: "row", alignItems: "center", gap: 4 },
+  openDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
+  openText: { color: colors.success, fontSize: 9, fontWeight: "800" },
+  salonBody: { flex: 1, paddingLeft: 12, paddingVertical: 4 },
+  nameRow: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
+  salonName: { flex: 1, color: colors.ink, fontSize: 15, lineHeight: 19, fontWeight: "900" },
+  rating: { backgroundColor: "#FFF1D6", borderRadius: 9, paddingHorizontal: 7, paddingVertical: 5, flexDirection: "row", alignItems: "center", gap: 3 },
+  ratingText: { color: colors.ink, fontSize: 9, fontWeight: "900" },
+  locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 9 },
+  location: { flex: 1, color: colors.muted, fontSize: 10 },
+  categories: { color: colors.muted, fontSize: 9, marginTop: 9 },
+  cardFooter: { flexDirection: "row", alignItems: "center", marginTop: 15, gap: 6 },
+  tag: { backgroundColor: "#F1E8FF", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 5 },
+  tagText: { color: colors.plum, fontSize: 8, fontWeight: "900" },
+  viewText: { flex: 1, color: colors.plum, fontSize: 10, fontWeight: "800", textAlign: "right" },
+  loading: { minHeight: 180, alignItems: "center", justifyContent: "center", gap: 9 },
+  loadingText: { color: colors.muted, fontSize: 12 },
+  empty: { backgroundColor: colors.white, borderRadius: radius.lg, padding: 28, alignItems: "center", borderWidth: 1, borderColor: colors.border },
+  emptyIcon: { width: 54, height: 54, borderRadius: 18, backgroundColor: colors.ivoryDeep, alignItems: "center", justifyContent: "center", marginBottom: 10 },
+  emptyTitle: { color: colors.ink, fontSize: 16, fontWeight: "900" },
+  emptyText: { color: colors.muted, fontSize: 11, marginTop: 5 },
+  dealsCard: { marginTop: 18, borderRadius: radius.lg, backgroundColor: "#FFF0E3", padding: 15, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: colors.border },
+  dealsIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: colors.plum, alignItems: "center", justifyContent: "center" },
+  dealsCopy: { flex: 1, marginLeft: 12 },
+  dealsTitle: { color: colors.ink, fontSize: 14, fontWeight: "900" },
+  dealsSubtitle: { color: colors.muted, fontSize: 10, marginTop: 3 },
+});
