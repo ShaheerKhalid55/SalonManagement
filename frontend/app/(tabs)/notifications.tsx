@@ -6,6 +6,7 @@ import { Screen } from "@/components/Screen";
 import { getApiErrorMessage } from "@/lib/api";
 import { colors, radius, shadows } from "@/constants/theme";
 import { getNotifications, markNotificationRead, Notification } from "@/services/notifications";
+import { AppText } from "@/components/Typography";
 
 type Filter = "ALL" | "APPOINTMENTS" | "PROMOTIONS" | "SYSTEM";
 
@@ -53,22 +54,22 @@ export default function NotificationsScreen() {
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.plum} />}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backCircle} accessibilityRole="button" accessibilityLabel="Back"><Ionicons name="arrow-back" size={20} color={colors.plum} /></Pressable>
-        <View style={{ flex: 1 }}><Text style={styles.kicker}>STAY UPDATED</Text><Text style={styles.title}>Notifications</Text></View>
-        {unread > 0 && <View style={styles.unreadBadge}><Text style={styles.unreadBadgeText}>{unread} new</Text></View>}
+        <View style={{ flex: 1 }}><AppText style={styles.kicker}>STAY UPDATED</AppText><AppText style={styles.title}>Notifications</AppText></View>
+        {unread > 0 && <View style={styles.unreadBadge}><AppText style={styles.unreadBadgeText}>{unread} new</AppText></View>}
       </View>
 
       <View style={styles.filters}>
         {(["ALL", "APPOINTMENTS", "PROMOTIONS", "SYSTEM"] as Filter[]).map(key => <Pressable key={key} onPress={() => setFilter(key)} style={[styles.filterPill, filter === key && styles.filterPillActive]}>
-          <Text style={[styles.filterText, filter === key && styles.filterTextActive]}>{key === "ALL" ? "All" : key.charAt(0) + key.slice(1).toLowerCase()}</Text>
+          <AppText style={[styles.filterText, filter === key && styles.filterTextActive]}>{key === "ALL" ? "All" : key.charAt(0) + key.slice(1).toLowerCase()}</AppText>
         </Pressable>)}
       </View>
 
-      {visible.length === 0 ? <View style={styles.empty}><View style={styles.emptyIcon}><Ionicons name="notifications-off-outline" size={25} color={colors.plum} /></View><Text style={styles.emptyTitle}>You're all caught up</Text><Text style={styles.emptyText}>New salon updates and reminders will appear here.</Text></View> : visible.map(n => <Pressable key={n.id} onPress={() => read(n)} style={[styles.item, !n.is_read && styles.unreadItem]}>
+      {visible.length === 0 ? <View style={styles.empty}><View style={styles.emptyIcon}><Ionicons name="notifications-off-outline" size={25} color={colors.plum} /></View><AppText style={styles.emptyTitle}>You're all caught up</AppText><AppText style={styles.emptyText}>New salon updates and reminders will appear here.</AppText></View> : visible.map(n => <Pressable key={n.id} onPress={() => read(n)} style={[styles.item, !n.is_read && styles.unreadItem]}>
         <View style={[styles.icon, { backgroundColor: category(n) === "PROMOTIONS" ? colors.champagneLight : colors.ivoryDeep }]}><Ionicons name={iconFor(n) as any} size={18} color={colors.plum} /></View>
         <View style={{ flex: 1 }}>
-          <View style={styles.itemTop}><Text style={styles.itemTitle} numberOfLines={1}>{n.title}</Text><Text style={styles.time}>{new Date(n.created_at).toLocaleDateString("en-PK", { day: "numeric", month: "short" })}</Text></View>
-          <Text style={styles.message}>{n.message}</Text>
-          {!n.is_read && <View style={styles.unreadLine}><View style={styles.redDot} /><Text style={styles.unreadText}>Unread · tap to mark as read</Text></View>}
+          <View style={styles.itemTop}><AppText style={styles.itemTitle} numberOfLines={1}>{n.title}</AppText><AppText style={styles.time}>{new Date(n.created_at).toLocaleDateString("en-PK", { day: "numeric", month: "short" })}</AppText></View>
+          <AppText style={styles.message}>{n.message}</AppText>
+          {!n.is_read && <View style={styles.unreadLine}><View style={styles.redDot} /><AppText style={styles.unreadText}>Unread · tap to mark as read</AppText></View>}
         </View>
       </Pressable>)}
     </ScrollView>

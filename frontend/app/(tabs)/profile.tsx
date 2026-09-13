@@ -6,6 +6,7 @@ import { Screen } from "@/components/Screen";
 import { AppButton } from "@/components/AppButton";
 import { useAuth } from "@/context/AuthContext";
 import { colors, radius, shadows } from "@/constants/theme";
+import { AppText } from "@/components/Typography";
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -24,19 +25,19 @@ export default function ProfileScreen() {
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.kicker}>ACCOUNT</Text>
-          <Text style={styles.title}>My profile</Text>
-          <Text style={styles.subtitle}>Manage your account, preferences and salon journey.</Text>
+          <AppText style={styles.kicker}>ACCOUNT</AppText>
+          <AppText style={styles.title}>My profile</AppText>
+          <AppText style={styles.subtitle}>Manage your account, preferences and salon journey.</AppText>
         </View>
       </View>
 
       <View style={styles.hero}>
         <View style={styles.heroGlow} />
-        <View style={styles.avatar}><Text style={styles.avatarText}>{initials}</Text></View>
+        <View style={styles.avatar}><AppText style={styles.avatarText}>{initials}</AppText></View>
         <View style={styles.heroInfo}>
-          <Text style={styles.name} numberOfLines={1}>{user?.name ?? "Customer"}</Text>
-          <Text style={styles.role}>CUSTOMER</Text>
-          <Text style={styles.phone}>{user?.phone ?? "Phone not provided"}</Text>
+          <AppText style={styles.name} numberOfLines={1}>{user?.name ?? "Customer"}</AppText>
+          <AppText style={styles.role}>CUSTOMER</AppText>
+          <AppText style={styles.phone}>{user?.phone ?? "Phone not provided"}</AppText>
         </View>
         <Pressable onPress={() => {}} style={styles.editButton}>
           <Ionicons name="create-outline" size={18} color={colors.champagneLight} />
@@ -46,28 +47,28 @@ export default function ProfileScreen() {
       <View style={styles.membership}>
         <View style={styles.membershipIcon}><Ionicons name="sparkles-outline" size={20} color={colors.plum} /></View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.membershipTitle}>Membership</Text>
-          <Text style={styles.membershipText}>Customer account · Ready for your next visit</Text>
+          <AppText style={styles.membershipTitle}>Membership</AppText>
+          <AppText style={styles.membershipText}>Customer account · Ready for your next visit</AppText>
         </View>
-        <View style={styles.activePill}><View style={styles.activeDot} /><Text style={styles.activeText}>ACTIVE</Text></View>
+        <View style={styles.activePill}><View style={styles.activeDot} /><AppText style={styles.activeText}>ACTIVE</AppText></View>
       </View>
 
-      <Text style={styles.sectionTitle}>Account</Text>
+      <AppText style={styles.sectionTitle}>Account</AppText>
       <View style={styles.menu}>
         {menu.map(([icon, label, description, onPress], index) => <Pressable key={label} onPress={onPress} style={[styles.menuRow, index === menu.length - 1 && styles.lastRow]}>
           <View style={styles.menuIcon}><Ionicons name={icon as any} size={19} color={colors.plum} /></View>
           <View style={styles.menuCopy}>
-            <Text style={styles.menuLabel}>{label}</Text>
-            <Text style={styles.menuDescription}>{description}</Text>
+            <AppText style={styles.menuLabel}>{label}</AppText>
+            <AppText style={styles.menuDescription}>{description}</AppText>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.muted} />
         </Pressable>)}
       </View>
 
-      <Text style={styles.sectionTitle}>Account status</Text>
+      <AppText style={styles.sectionTitle}>Account status</AppText>
       <View style={styles.statusCard}>
-        <View><Text style={styles.statusLabel}>EMAIL</Text><Text style={styles.statusValue}>{user?.email ?? "Not provided"}</Text></View>
-        <View style={styles.verified}><Ionicons name="checkmark-circle" size={15} color={colors.success} /><Text style={styles.verifiedText}>ACCOUNT ACTIVE</Text></View>
+        <View><AppText style={styles.statusLabel}>EMAIL</AppText><AppText style={styles.statusValue}>{user?.email ?? "Not provided"}</AppText></View>
+        <View style={styles.verified}><Ionicons name="checkmark-circle" size={15} color={colors.success} /><AppText style={styles.verifiedText}>ACCOUNT ACTIVE</AppText></View>
       </View>
 
       <AppButton title="Sign out" variant="ghost" onPress={() => Alert.alert("Sign out", "Are you sure you want to sign out?", [{ text: "Cancel", style: "cancel" }, { text: "Sign out", style: "destructive", onPress: logout }])} style={styles.signOut} />

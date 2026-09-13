@@ -1,6 +1,7 @@
 import React from "react";
 import {ActivityIndicator,Pressable,StyleSheet,Text,ViewStyle} from "react-native";
 import { colors, radius } from "@/constants/theme";
+import { AppText } from "@/components/Typography";
 
 export function AppButton({title,onPress,loading=false,disabled=false,variant="primary",style}: {
   title:string; onPress:()=>void; loading?:boolean; disabled?:boolean;
@@ -8,7 +9,7 @@ export function AppButton({title,onPress,loading=false,disabled=false,variant="p
 }) {
   return <Pressable onPress={onPress} disabled={disabled||loading}
     style={({pressed})=>[styles.button,variant==="secondary"?styles.secondary:variant==="ghost"?styles.ghost:styles.primary,(disabled||loading)&&styles.disabled,pressed&&styles.pressed,style]}>
-    {loading?<ActivityIndicator color={variant==="primary"?colors.white:colors.plum}/>:<Text style={[styles.text,variant!=="primary"&&styles.secondaryText]}>{title}</Text>}
+    {loading?<ActivityIndicator color={variant==="primary"?colors.white:colors.plum}/>:<AppText style={[styles.text,variant!=="primary"&&styles.secondaryText]}>{title}</AppText>}
   </Pressable>;
 }
 const styles=StyleSheet.create({

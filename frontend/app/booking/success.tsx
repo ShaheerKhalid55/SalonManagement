@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { AppButton } from "@/components/AppButton";
 import { colors, radius, shadows } from "@/constants/theme";
+import { AppText } from "@/components/Typography";
 
 function dateText(value?: string) {
   if (!value) return "";
@@ -44,17 +45,17 @@ export default function BookingSuccessScreen() {
           <View style={[styles.confetti, styles.c1]} /><View style={[styles.confetti, styles.c2]} /><View style={[styles.confetti, styles.c3]} /><View style={[styles.confetti, styles.c4]} />
         </View>
 
-        <Text style={styles.kicker}>ALL SET</Text>
-        <Text style={styles.title}>Booking confirmed!</Text>
-        <Text style={styles.subtitle}>Your salon visit is booked. We look forward to seeing you.</Text>
+        <AppText style={styles.kicker}>ALL SET</AppText>
+        <AppText style={styles.title}>Booking confirmed!</AppText>
+        <AppText style={styles.subtitle}>Your salon visit is booked. We look forward to seeing you.</AppText>
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View>
-              <Text style={styles.cardLabel}>BOOKING NUMBER</Text>
-              <Text style={styles.bookingNumber}>{params.bookingNumber || "Confirmed"}</Text>
+              <AppText style={styles.cardLabel}>BOOKING NUMBER</AppText>
+              <AppText style={styles.bookingNumber}>{params.bookingNumber || "Confirmed"}</AppText>
             </View>
-            <View style={styles.status}><Text style={styles.statusText}>CONFIRMED</Text></View>
+            <View style={styles.status}><AppText style={styles.statusText}>CONFIRMED</AppText></View>
           </View>
 
           <View style={styles.divider} />
@@ -66,7 +67,7 @@ export default function BookingSuccessScreen() {
 
         <View style={styles.note}>
           <Ionicons name="calendar-outline" size={18} color={colors.plum} />
-          <Text style={styles.noteText}>You can view, manage or cancel this appointment from My Appointments.</Text>
+          <AppText style={styles.noteText}>You can view, manage or cancel this appointment from My Appointments.</AppText>
         </View>
 
         <View style={styles.actions}>
@@ -82,7 +83,7 @@ function Info({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; la
   return (
     <View style={styles.infoRow}>
       <View style={styles.infoIcon}><Ionicons name={icon} size={17} color={colors.plum} /></View>
-      <View style={{ flex: 1 }}><Text style={styles.infoLabel}>{label}</Text><Text style={styles.infoValue}>{value}</Text></View>
+      <View style={{ flex: 1 }}><AppText style={styles.infoLabel}>{label}</AppText><AppText style={styles.infoValue}>{value}</AppText></View>
     </View>
   );
 }

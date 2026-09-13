@@ -6,6 +6,7 @@ import { Screen } from "@/components/Screen";
 import { getSalons, Salon } from "@/services/catalog";
 import { getApiErrorMessage } from "@/lib/api";
 import { colors, radius, shadows } from "@/constants/theme";
+import { AppText, AppTextInput } from "@/components/Typography";
 
 const salonIcon = (index: number): keyof typeof Ionicons.glyphMap => {
   const icons: (keyof typeof Ionicons.glyphMap)[] = ["sparkles-outline", "cut-outline", "flower-outline", "color-palette-outline"];
@@ -52,21 +53,21 @@ export default function ServicesScreen() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <View style={styles.headerRow}>
             <View style={styles.headerCopy}>
-              {/* <Text style={styles.kicker}>THE SALON MENU</Text> */}
-              <Text style={styles.title}>Services</Text>
-              {/* <Text style={styles.subtitle}>Choose a salon to explore its services and exclusive bundles.</Text> */}
+              {/* <AppText style={styles.kicker}>THE SALON MENU</AppText> */}
+              <AppText style={styles.title}>Services</AppText>
+              {/* <AppText style={styles.subtitle}>Choose a salon to explore its services and exclusive bundles.</AppText> */}
             </View>
             {/* <View style={styles.headerIcon}>
               <Ionicons name="sparkles" size={22} color={colors.champagne} />
             </View> */}
           </View>
 
-          <Text style={styles.sectionTitle}>Choose a salon</Text>
-          <Text style={styles.sectionSubtitle}>Select a salon to view services and bundles</Text>
+          <AppText style={styles.sectionTitle}>Choose a salon</AppText>
+          <AppText style={styles.sectionSubtitle}>Select a salon to view services and bundles</AppText>
 
           <View style={styles.searchBox}>
             <Ionicons name="search-outline" size={20} color={colors.muted} />
-            <TextInput
+            <AppTextInput
               value={search}
               onChangeText={setSearch}
               placeholder="Search salon name, location..."
@@ -86,7 +87,7 @@ export default function ServicesScreen() {
               const active = filter === item;
               return (
                 <Pressable key={item} onPress={() => setFilter(item)} style={[styles.filterChip, active && styles.filterChipActive]}>
-                  <Text style={[styles.filterText, active && styles.filterTextActive]}>{item}</Text>
+                  <AppText style={[styles.filterText, active && styles.filterTextActive]}>{item}</AppText>
                 </Pressable>
               );
             })}
@@ -95,13 +96,13 @@ export default function ServicesScreen() {
           {loading ? (
             <View style={styles.loading}>
               <ActivityIndicator color={colors.plum} />
-              <Text style={styles.loadingText}>Finding salons...</Text>
+              <AppText style={styles.loadingText}>Finding salons...</AppText>
             </View>
           ) : filtered.length === 0 ? (
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="search-outline" size={24} color={colors.plum} /></View>
-              <Text style={styles.emptyTitle}>No salons found</Text>
-              <Text style={styles.emptyText}>Try another salon name or location.</Text>
+              <AppText style={styles.emptyTitle}>No salons found</AppText>
+              <AppText style={styles.emptyText}>Try another salon name or location.</AppText>
             </View>
           ) : (
             <View style={styles.list}>
@@ -112,29 +113,29 @@ export default function ServicesScreen() {
                     <Ionicons name={salonIcon(index)} size={32} color={colors.plum} />
                     <View style={styles.openBadge}>
                       <View style={styles.openDot} />
-                      <Text style={styles.openText}>Open</Text>
+                      <AppText style={styles.openText}>Open</AppText>
                     </View>
                   </View>
                   <View style={styles.salonBody}>
                     <View style={styles.nameRow}>
-                      <Text style={styles.salonName} numberOfLines={2}>{salon.name}</Text>
-                      <View style={styles.rating}><Ionicons name="star" size={12} color={colors.champagne} /><Text style={styles.ratingText}>4.8</Text></View>
+                      <AppText style={styles.salonName} numberOfLines={2}>{salon.name}</AppText>
+                      <View style={styles.rating}><Ionicons name="star" size={12} color={colors.champagne} /><AppText style={styles.ratingText}>4.8</AppText></View>
                     </View>
                     <View style={styles.locationRow}>
                       <Ionicons name="location-outline" size={14} color={colors.muted} />
-                      <Text style={styles.location} numberOfLines={1}>{salon.city || salon.address_line1 || "Location available"}</Text>
+                      <AppText style={styles.location} numberOfLines={1}>{salon.city || salon.address_line1 || "Location available"}</AppText>
                     </View>
-                    <Text style={styles.categories} numberOfLines={1}>Hair  ·  Skin  ·  Nails  ·  Makeup</Text>
+                    <AppText style={styles.categories} numberOfLines={1}>Hair  ·  Skin  ·  Nails  ·  Makeup</AppText>
                     <View style={styles.cardFooter}>
-                      <View style={styles.tag}><Text style={styles.tagText}>Popular</Text></View>
-                      {/* <Text style={styles.viewText}>View services</Text> */}
+                      <View style={styles.tag}><AppText style={styles.tagText}>Popular</AppText></View>
+                      {/* <AppText style={styles.viewText}>View services</AppText> */}
                       <Ionicons name="arrow-forward" size={17} color={colors.plum} />
                     </View>
                   </View>
                   </Pressable>
                   <Pressable onPress={() => toggleCompare(salon.id)} style={[styles.compareButton, selectedSalonIds.includes(salon.id) && styles.compareButtonActive]}>
                     <Ionicons name={selectedSalonIds.includes(salon.id) ? "checkmark-circle" : "git-compare-outline"} size={15} color={selectedSalonIds.includes(salon.id) ? colors.white : colors.plum} />
-                    <Text style={[styles.compareButtonText, selectedSalonIds.includes(salon.id) && styles.compareButtonTextActive]}>Compare</Text>
+                    <AppText style={[styles.compareButtonText, selectedSalonIds.includes(salon.id) && styles.compareButtonTextActive]}>Compare</AppText>
                   </Pressable>
                 </View>
               ))}
@@ -144,14 +145,14 @@ export default function ServicesScreen() {
           {selectedSalonIds.length > 0 ? (
             <View style={styles.compareBar}>
               <View style={styles.compareBarIcon}><Ionicons name="git-compare-outline" size={20} color={colors.plum} /></View>
-              <View style={styles.compareBarCopy}><Text style={styles.compareBarTitle}>{selectedSalonIds.length} salon{selectedSalonIds.length > 1 ? "s" : ""} selected</Text><Text style={styles.compareBarSubtitle}>{selectedSalonIds.length < 2 ? "Select one more salon to compare" : "Compare these two salons"}</Text></View>
-              <Pressable disabled={selectedSalonIds.length < 2} onPress={() => router.push({ pathname: "/compare", params: { salonIds: selectedSalonIds.join(",") } })} style={[styles.compareGo, selectedSalonIds.length < 2 && styles.compareGoDisabled]}><Text style={styles.compareGoText}>Compare</Text></Pressable>
+              <View style={styles.compareBarCopy}><AppText style={styles.compareBarTitle}>{selectedSalonIds.length} salon{selectedSalonIds.length > 1 ? "s" : ""} selected</AppText><AppText style={styles.compareBarSubtitle}>{selectedSalonIds.length < 2 ? "Select one more salon to compare" : "Compare these two salons"}</AppText></View>
+              <Pressable disabled={selectedSalonIds.length < 2} onPress={() => router.push({ pathname: "/compare", params: { salonIds: selectedSalonIds.join(",") } })} style={[styles.compareGo, selectedSalonIds.length < 2 && styles.compareGoDisabled]}><AppText style={styles.compareGoText}>Compare</AppText></Pressable>
             </View>
           ) : null}
 
           <Pressable style={styles.dealsCard} onPress={() => filtered[0] && router.push(`/salon/${filtered[0].id}`)}>
             <View style={styles.dealsIcon}><Ionicons name="pricetag-outline" size={22} color={colors.champagneLight} /></View>
-            <View style={styles.dealsCopy}><Text style={styles.dealsTitle}>Deals & Offers</Text><Text style={styles.dealsSubtitle}>Explore salon packages and discounts</Text></View>
+            <View style={styles.dealsCopy}><AppText style={styles.dealsTitle}>Deals & Offers</AppText><AppText style={styles.dealsSubtitle}>Explore salon packages and discounts</AppText></View>
             <Ionicons name="chevron-forward" size={23} color={colors.plum} />
           </Pressable>
         </ScrollView>

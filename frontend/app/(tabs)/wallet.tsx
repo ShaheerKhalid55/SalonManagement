@@ -6,6 +6,7 @@ import { AppButton } from "@/components/AppButton";
 import { getApiErrorMessage } from "@/lib/api";
 import { colors, radius, shadows } from "@/constants/theme";
 import { getWallet, getWalletTransactions, topUpWallet, Wallet, WalletTransaction } from "@/services/wallet";
+import { AppText, AppTextInput } from "@/components/Typography";
 
 const money = (v: unknown) => `PKR ${Number(v ?? 0).toLocaleString("en-PK", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
@@ -34,30 +35,30 @@ export default function WalletScreen() {
 
   return <Screen>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.plum} />}>
-      <Text style={styles.kicker}>YOUR MONEY</Text>
-      <Text style={styles.title}>My wallet</Text>
-      <Text style={styles.subtitle}>A simple way to pay for your salon visits.</Text>
+      <AppText style={styles.kicker}>YOUR MONEY</AppText>
+      <AppText style={styles.title}>My wallet</AppText>
+      <AppText style={styles.subtitle}>A simple way to pay for your salon visits.</AppText>
 
       <View style={styles.balance}>
-        <View style={styles.balanceTop}><Text style={styles.label}>CURRENT BALANCE</Text><Ionicons name="wallet-outline" size={29} color={colors.champagne} /></View>
-        <Text style={styles.amount}>{loading ? "Loading..." : money(wallet?.balance)}</Text>
+        <View style={styles.balanceTop}><AppText style={styles.label}>CURRENT BALANCE</AppText><Ionicons name="wallet-outline" size={29} color={colors.champagne} /></View>
+        <AppText style={styles.amount}>{loading ? "Loading..." : money(wallet?.balance)}</AppText>
         <AppButton title="＋ Add money" variant="secondary" onPress={() => setAmount("1000")} style={styles.addButton} />
       </View>
 
       <View style={styles.card}>
-        <View style={styles.cardHeader}><View><Text style={styles.sectionTitle}>Add money</Text><Text style={styles.hint}>Top up your wallet before your next visit.</Text></View><View style={styles.cardIcon}><Ionicons name="add" size={19} color={colors.plum} /></View></View>
-        <TextInput value={amount} onChangeText={setAmount} placeholder="Enter amount" keyboardType="decimal-pad" placeholderTextColor={colors.muted} style={styles.input} />
-        <View style={styles.quickRow}>{[500, 1000, 2000].map(v => <Pressable key={v} onPress={() => setAmount(String(v))} style={styles.quick}><Text style={styles.quickText}>PKR {v.toLocaleString()}</Text></Pressable>)}</View>
+        <View style={styles.cardHeader}><View><AppText style={styles.sectionTitle}>Add money</AppText><AppText style={styles.hint}>Top up your wallet before your next visit.</AppText></View><View style={styles.cardIcon}><Ionicons name="add" size={19} color={colors.plum} /></View></View>
+        <AppTextInput value={amount} onChangeText={setAmount} placeholder="Enter amount" keyboardType="decimal-pad" placeholderTextColor={colors.muted} style={styles.input} />
+        <View style={styles.quickRow}>{[500, 1000, 2000].map(v => <Pressable key={v} onPress={() => setAmount(String(v))} style={styles.quick}><AppText style={styles.quickText}>PKR {v.toLocaleString()}</AppText></Pressable>)}</View>
         <AppButton title={adding ? "Adding..." : "Add money"} onPress={addMoney} disabled={adding} style={{ marginTop: 3 }} />
       </View>
 
-      <View style={styles.sectionHeader}><View><Text style={styles.sectionTitle}>Transaction history</Text><Text style={styles.hint}>Your recent wallet activity</Text></View><Text style={styles.viewAll}>Recent</Text></View>
-      {transactions.length === 0 ? <View style={styles.empty}><Ionicons name="receipt-outline" size={25} color={colors.plum} /><Text style={styles.emptyTitle}>No transactions yet</Text><Text style={styles.hint}>Wallet activity will appear here.</Text></View> : transactions.map(tx => {
+      <View style={styles.sectionHeader}><View><AppText style={styles.sectionTitle}>Transaction history</AppText><AppText style={styles.hint}>Your recent wallet activity</AppText></View><AppText style={styles.viewAll}>Recent</AppText></View>
+      {transactions.length === 0 ? <View style={styles.empty}><Ionicons name="receipt-outline" size={25} color={colors.plum} /><AppText style={styles.emptyTitle}>No transactions yet</AppText><AppText style={styles.hint}>Wallet activity will appear here.</AppText></View> : transactions.map(tx => {
         const positive = Number(tx.amount) >= 0;
         return <View key={tx.id} style={styles.transaction}>
           <View style={[styles.txIcon, { backgroundColor: positive ? "#EAF5EF" : "#FBEDEC" }]}><Ionicons name={positive ? "arrow-down-outline" : "arrow-up-outline"} size={18} color={positive ? colors.success : colors.danger} /></View>
-          <View style={{ flex: 1 }}><Text style={styles.txTitle}>{tx.description || tx.transaction_type}</Text><Text style={styles.txMeta}>{new Date(tx.created_at).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" })}</Text></View>
-          <Text style={[styles.txAmount, positive ? styles.credit : styles.debit]}>{positive ? "+" : "-"}{money(Math.abs(Number(tx.amount)))}</Text>
+          <View style={{ flex: 1 }}><AppText style={styles.txTitle}>{tx.description || tx.transaction_type}</AppText><AppText style={styles.txMeta}>{new Date(tx.created_at).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" })}</AppText></View>
+          <AppText style={[styles.txAmount, positive ? styles.credit : styles.debit]}>{positive ? "+" : "-"}{money(Math.abs(Number(tx.amount)))}</AppText>
         </View>;
       })}
     </ScrollView>

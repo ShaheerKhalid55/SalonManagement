@@ -7,6 +7,7 @@ import { AppButton } from "@/components/AppButton";
 import { createBooking, getAvailableSlots, Slot } from "@/services/catalog";
 import { getApiErrorMessage } from "@/lib/api";
 import { colors, radius, shadows } from "@/constants/theme";
+import { AppText } from "@/components/Typography";
 
 function isoDate(offset = 0) {
   const d = new Date();
@@ -148,11 +149,11 @@ export default function BookingScreen() {
             <Ionicons name="chevron-back" size={21} color={colors.plum} />
           </Pressable>
           <View style={styles.headerCopy}>
-            <Text style={styles.kicker}>RESERVE YOUR VISIT</Text>
-            <Text style={styles.title}>Book appointment</Text>
+            <AppText style={styles.kicker}>RESERVE YOUR VISIT</AppText>
+            <AppText style={styles.title}>Book appointment</AppText>
           </View>
           <View style={styles.stepBadge}>
-            <Text style={styles.stepBadgeText}>{step}/3</Text>
+            <AppText style={styles.stepBadgeText}>{step}/3</AppText>
           </View>
         </View>
 
@@ -160,16 +161,16 @@ export default function BookingScreen() {
           {[1, 2, 3].map((item) => (
             <React.Fragment key={item}>
               <View style={[styles.progressDot, item <= step && styles.progressDotActive]}>
-                {item < step ? <Ionicons name="checkmark" size={12} color={colors.plum} /> : <Text style={[styles.progressNumber, item === step && styles.progressNumberActive]}>{item}</Text>}
+                {item < step ? <Ionicons name="checkmark" size={12} color={colors.plum} /> : <AppText style={[styles.progressNumber, item === step && styles.progressNumberActive]}>{item}</AppText>}
               </View>
               {item < 3 ? <View style={[styles.progressLine, item < step && styles.progressLineActive]} /> : null}
             </React.Fragment>
           ))}
         </View>
         <View style={styles.progressLabels}>
-          <Text style={styles.progressLabel}>Service</Text>
-          <Text style={styles.progressLabel}>Date & time</Text>
-          <Text style={styles.progressLabel}>Confirm</Text>
+          <AppText style={styles.progressLabel}>Service</AppText>
+          <AppText style={styles.progressLabel}>Date & time</AppText>
+          <AppText style={styles.progressLabel}>Confirm</AppText>
         </View>
 
         {step === 1 ? (
@@ -216,9 +217,9 @@ export default function BookingScreen() {
               onPress={goNext}
             />
           )}
-          <Text style={styles.secureText}>
+          <AppText style={styles.secureText}>
             <Ionicons name="lock-closed-outline" size={12} color={colors.muted} /> Secure booking · Wallet charged after confirmation
-          </Text>
+          </AppText>
         </View>
       </ScrollView>
     </Screen>
@@ -228,8 +229,8 @@ export default function BookingScreen() {
 function ServiceStep({ name, price, bundle }: { name: string; price: number; bundle: boolean }) {
   return (
     <View>
-      <Text style={styles.sectionTitle}>Your selection</Text>
-      <Text style={styles.sectionSubtitle}>A beautiful visit starts with the right service.</Text>
+      <AppText style={styles.sectionTitle}>Your selection</AppText>
+      <AppText style={styles.sectionSubtitle}>A beautiful visit starts with the right service.</AppText>
 
       <View style={styles.selectedCard}>
         <View style={styles.serviceArtwork}>
@@ -238,13 +239,13 @@ function ServiceStep({ name, price, bundle }: { name: string; price: number; bun
         <View style={styles.selectedCopy}>
           <View style={styles.badgeRow}>
             <View style={styles.goldBadge}>
-              <Text style={styles.goldBadgeText}>{bundle ? "PACKAGE" : "SERVICE"}</Text>
+              <AppText style={styles.goldBadgeText}>{bundle ? "PACKAGE" : "SERVICE"}</AppText>
             </View>
             <Ionicons name="checkmark-circle" size={20} color={colors.champagne} />
           </View>
-          <Text style={styles.selectedName}>{name}</Text>
-          <Text style={styles.selectedDescription}>{bundle ? "Curated salon package" : "Professional salon service"}</Text>
-          <Text style={styles.selectedPrice}>{money(price)}</Text>
+          <AppText style={styles.selectedName}>{name}</AppText>
+          <AppText style={styles.selectedDescription}>{bundle ? "Curated salon package" : "Professional salon service"}</AppText>
+          <AppText style={styles.selectedPrice}>{money(price)}</AppText>
         </View>
       </View>
 
@@ -260,8 +261,8 @@ function Perk({ icon, title, text }: { icon: keyof typeof Ionicons.glyphMap; tit
   return (
     <View style={styles.perk}>
       <View style={styles.perkIcon}><Ionicons name={icon} size={18} color={colors.plum} /></View>
-      <Text style={styles.perkTitle}>{title}</Text>
-      <Text style={styles.perkText}>{text}</Text>
+      <AppText style={styles.perkTitle}>{title}</AppText>
+      <AppText style={styles.perkText}>{text}</AppText>
     </View>
   );
 }
@@ -285,19 +286,19 @@ function DateTimeStep({
 }) {
   return (
     <View>
-      <Text style={styles.sectionTitle}>When would you like to visit?</Text>
-      <Text style={styles.sectionSubtitle}>Select a date and one of the available appointment times.</Text>
+      <AppText style={styles.sectionTitle}>When would you like to visit?</AppText>
+      <AppText style={styles.sectionSubtitle}>Select a date and one of the available appointment times.</AppText>
 
-      <Text style={styles.fieldLabel}>Choose date</Text>
+      <AppText style={styles.fieldLabel}>Choose date</AppText>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateScroller}>
         {dates.map((item) => {
           const active = item === date;
           const d = new Date(`${item}T12:00:00`);
           return (
             <Pressable key={item} onPress={() => setDate(item)} style={[styles.dateCard, active && styles.dateCardActive]}>
-              <Text style={[styles.dateWeekday, active && styles.dateActiveText]}>{d.toLocaleDateString("en-PK", { weekday: "short" })}</Text>
-              <Text style={[styles.dateDay, active && styles.dateActiveText]}>{d.getDate()}</Text>
-              <Text style={[styles.dateMonth, active && styles.dateActiveText]}>{d.toLocaleDateString("en-PK", { month: "short" })}</Text>
+              <AppText style={[styles.dateWeekday, active && styles.dateActiveText]}>{d.toLocaleDateString("en-PK", { weekday: "short" })}</AppText>
+              <AppText style={[styles.dateDay, active && styles.dateActiveText]}>{d.getDate()}</AppText>
+              <AppText style={[styles.dateMonth, active && styles.dateActiveText]}>{d.toLocaleDateString("en-PK", { month: "short" })}</AppText>
             </Pressable>
           );
         })}
@@ -305,8 +306,8 @@ function DateTimeStep({
 
       <View style={styles.selectedDateHeader}>
         <View>
-          <Text style={styles.fieldLabel}>Available times</Text>
-          <Text style={styles.dateCaption}>{fullDate(date)}</Text>
+          <AppText style={styles.fieldLabel}>Available times</AppText>
+          <AppText style={styles.dateCaption}>{fullDate(date)}</AppText>
         </View>
         {loading ? <ActivityIndicator color={colors.champagne} /> : null}
       </View>
@@ -314,13 +315,13 @@ function DateTimeStep({
       {loading ? (
         <View style={styles.loadingCard}>
           <ActivityIndicator color={colors.plum} />
-          <Text style={styles.hint}>Finding the best available times...</Text>
+          <AppText style={styles.hint}>Finding the best available times...</AppText>
         </View>
       ) : slots.length === 0 ? (
         <View style={styles.emptyCard}>
           <View style={styles.emptyIcon}><Ionicons name="calendar-clear-outline" size={24} color={colors.plum} /></View>
-          <Text style={styles.emptyTitle}>No times available</Text>
-          <Text style={styles.hint}>Please select another date to continue.</Text>
+          <AppText style={styles.emptyTitle}>No times available</AppText>
+          <AppText style={styles.hint}>Please select another date to continue.</AppText>
         </View>
       ) : (
         <View style={styles.slotGrid}>
@@ -329,8 +330,8 @@ function DateTimeStep({
             return (
               <Pressable key={slot.id} onPress={() => setSlotId(slot.id)} style={[styles.slotCard, active && styles.slotCardActive]}>
                 <Ionicons name="time-outline" size={17} color={active ? colors.champagne : colors.plum} />
-                <Text style={[styles.slotText, active && styles.slotTextActive]}>{time(slot.start_time)}</Text>
-                <Text style={[styles.slotEnd, active && styles.slotTextActive]}>– {time(slot.end_time)}</Text>
+                <AppText style={[styles.slotText, active && styles.slotTextActive]}>{time(slot.start_time)}</AppText>
+                <AppText style={[styles.slotEnd, active && styles.slotTextActive]}>– {time(slot.end_time)}</AppText>
                 {active ? <Ionicons name="checkmark-circle" size={18} color={colors.champagne} style={styles.slotCheck} /> : null}
               </Pressable>
             );
@@ -356,17 +357,17 @@ function ReviewStep({
 }) {
   return (
     <View>
-      <Text style={styles.sectionTitle}>Almost there</Text>
-      <Text style={styles.sectionSubtitle}>Review your appointment details before confirming.</Text>
+      <AppText style={styles.sectionTitle}>Almost there</AppText>
+      <AppText style={styles.sectionSubtitle}>Review your appointment details before confirming.</AppText>
 
       <View style={styles.reviewCard}>
         <View style={styles.reviewTop}>
           <View style={styles.reviewIcon}><Ionicons name="sparkles-outline" size={23} color={colors.champagne} /></View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.reviewLabel}>YOUR APPOINTMENT</Text>
-            <Text style={styles.reviewName}>{name}</Text>
+            <AppText style={styles.reviewLabel}>YOUR APPOINTMENT</AppText>
+            <AppText style={styles.reviewName}>{name}</AppText>
           </View>
-          <Text style={styles.reviewPrice}>{money(price)}</Text>
+          <AppText style={styles.reviewPrice}>{money(price)}</AppText>
         </View>
 
         <View style={styles.divider} />
@@ -378,8 +379,8 @@ function ReviewStep({
       <View style={styles.walletNote}>
         <View style={styles.walletNoteIcon}><Ionicons name="shield-checkmark-outline" size={19} color={colors.plum} /></View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.walletNoteTitle}>Secure wallet payment</Text>
-          <Text style={styles.walletNoteText}>Your wallet will only be charged when the booking is successfully confirmed.</Text>
+          <AppText style={styles.walletNoteTitle}>Secure wallet payment</AppText>
+          <AppText style={styles.walletNoteText}>Your wallet will only be charged when the booking is successfully confirmed.</AppText>
         </View>
       </View>
     </View>
@@ -391,8 +392,8 @@ function ReviewLine({ icon, label, value }: { icon: keyof typeof Ionicons.glyphM
     <View style={styles.reviewLine}>
       <View style={styles.reviewLineIcon}><Ionicons name={icon} size={17} color={colors.plum} /></View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.reviewLineLabel}>{label}</Text>
-        <Text style={styles.reviewLineValue}>{value}</Text>
+        <AppText style={styles.reviewLineLabel}>{label}</AppText>
+        <AppText style={styles.reviewLineValue}>{value}</AppText>
       </View>
     </View>
   );

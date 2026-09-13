@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { getMyBookings, Booking } from "@/services/bookings";
 import { getNotifications } from "@/services/notifications";
 import { colors, radius, shadows, spacing } from "@/constants/theme";
+import { AppText } from "@/components/Typography";
 
 function money(v: unknown) { const n = Number(v ?? 0); return `PKR ${Number.isNaN(n) ? 0 : n.toLocaleString("en-PK", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`; }
 function dateText(v: string) { return new Date(`${v}T12:00:00`).toLocaleDateString("en-PK", { weekday: "short", day: "numeric", month: "short" }); }
@@ -20,25 +21,25 @@ export default function HomeScreen() {
   useEffect(() => { load(); }, [load]);
   const firstName = user?.name?.split(" ")[0] || "there";
   return <Screen><ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}>
-    <View style={styles.header}><View style={{ flex: 1 }}><Text style={styles.kicker}>YOUR BEAUTY JOURNEY</Text><Text style={styles.title}>Good morning, {firstName} 👋</Text><Text style={styles.subtitle}>Ready for your next visit?</Text></View><View style={styles.headerIcons}><Pressable accessibilityRole="button" accessibilityLabel="Notifications" onPress={() => router.push("/(tabs)/notifications")} style={styles.iconButton}><Ionicons name="notifications-outline" size={20} color={colors.plum} />{unread > 0 && <View style={styles.dot}><Text style={styles.dotText}>{unread > 9 ? "9+" : unread}</Text></View>}</Pressable></View></View>
-    <View style={styles.wallet}><View style={styles.walletTop}><Text style={styles.walletLabel}>WALLET BALANCE</Text><Ionicons name="wallet-outline" size={28} color={colors.champagne} /></View><Text style={styles.walletAmount}>{loading ? <ActivityIndicator color={colors.white} /> : money(balance)}</Text><AppButton title="View wallet  →" variant="secondary" onPress={() => router.push("/(tabs)/wallet")} style={styles.walletButton} /></View>
-    <View style={styles.sectionHeader}><Text style={styles.section}>Quick actions</Text></View>
+    <View style={styles.header}><View style={{ flex: 1 }}><AppText style={styles.kicker}>YOUR BEAUTY JOURNEY</AppText><AppText style={styles.title}>Good morning, {firstName} 👋</AppText><AppText style={styles.subtitle}>Ready for your next visit?</AppText></View><View style={styles.headerIcons}><Pressable accessibilityRole="button" accessibilityLabel="Notifications" onPress={() => router.push("/(tabs)/notifications")} style={styles.iconButton}><Ionicons name="notifications-outline" size={20} color={colors.plum} />{unread > 0 && <View style={styles.dot}><AppText style={styles.dotText}>{unread > 9 ? "9+" : unread}</AppText></View>}</Pressable></View></View>
+    <View style={styles.wallet}><View style={styles.walletTop}><AppText style={styles.walletLabel}>WALLET BALANCE</AppText><Ionicons name="wallet-outline" size={28} color={colors.champagne} /></View><AppText style={styles.walletAmount}>{loading ? <ActivityIndicator color={colors.white} /> : money(balance)}</AppText><AppButton title="View wallet  →" variant="secondary" onPress={() => router.push("/(tabs)/wallet")} style={styles.walletButton} /></View>
+    <View style={styles.sectionHeader}><AppText style={styles.section}>Quick actions</AppText></View>
     <View style={styles.quickGrid}>{[
       ["cut-outline", "Services", "/(tabs)/services"]
-    ].map(([icon, label, path]) => <Pressable key={label} onPress={() => router.push(path as any)} style={styles.quick}><View style={styles.quickIcon}><Ionicons name={icon as any} size={21} color={colors.plum} /></View><Text style={styles.quickText}>{label}</Text><Ionicons name="chevron-forward" size={18} color={colors.plum} /></Pressable>)}</View>
-    <View style={styles.sectionHeader}><Text style={styles.section}>Upcoming appointment</Text><Pressable onPress={() => router.push("/(tabs)/appointments")} style={styles.viewAllWrap}><Text style={styles.viewAll}>View all</Text><Ionicons name="chevron-forward" size={14} color={colors.champagne} /></Pressable></View>
-    {upcoming.length === 0 ? <View style={styles.card}><Text style={styles.cardTitle}>Your next visit is waiting ✨</Text><Text style={styles.text}>Explore our services and reserve your preferred time.</Text><AppButton title="Browse services" onPress={() => router.push("/(tabs)/services")} style={{ marginTop: 14 }} /></View> :
+    ].map(([icon, label, path]) => <Pressable key={label} onPress={() => router.push(path as any)} style={styles.quick}><View style={styles.quickIcon}><Ionicons name={icon as any} size={21} color={colors.plum} /></View><AppText style={styles.quickText}>{label}</AppText><Ionicons name="chevron-forward" size={18} color={colors.plum} /></Pressable>)}</View>
+    <View style={styles.sectionHeader}><AppText style={styles.section}>Upcoming appointment</AppText><Pressable onPress={() => router.push("/(tabs)/appointments")} style={styles.viewAllWrap}><AppText style={styles.viewAll}>View all</AppText><Ionicons name="chevron-forward" size={14} color={colors.champagne} /></Pressable></View>
+    {upcoming.length === 0 ? <View style={styles.card}><AppText style={styles.cardTitle}>Your next visit is waiting ✨</AppText><AppText style={styles.text}>Explore our services and reserve your preferred time.</AppText><AppButton title="Browse services" onPress={() => router.push("/(tabs)/services")} style={{ marginTop: 14 }} /></View> :
       <View style={styles.appointment}>
   <View style={styles.appointmentRow}>
     <View style={styles.dateBox}>
-      <Text style={styles.dateDay}>{new Date(`${upcoming[0].booking_date}T12:00:00`).getDate()}</Text>
-      <Text style={styles.dateMonth}>{new Date(`${upcoming[0].booking_date}T12:00:00`).toLocaleDateString("en-PK",{month:"short"}).toUpperCase()}</Text>
+      <AppText style={styles.dateDay}>{new Date(`${upcoming[0].booking_date}T12:00:00`).getDate()}</AppText>
+      <AppText style={styles.dateMonth}>{new Date(`${upcoming[0].booking_date}T12:00:00`).toLocaleDateString("en-PK",{month:"short"}).toUpperCase()}</AppText>
     </View>
     <View style={{ flex: 1, marginLeft: 14 }}>
-      <View style={styles.status}><Text style={styles.statusText}>UPCOMING</Text></View>
-      <Text style={styles.appTitle}>{upcoming[0].items.map(i=>i.name).join(" + ")}</Text>
-      <Text style={styles.text}>{dateText(upcoming[0].booking_date)} · {time(upcoming[0].start_time)}</Text>
-      <Text style={styles.location}>⌖ Glamour Salon</Text>
+      <View style={styles.status}><AppText style={styles.statusText}>UPCOMING</AppText></View>
+      <AppText style={styles.appTitle}>{upcoming[0].items.map(i=>i.name).join(" + ")}</AppText>
+      <AppText style={styles.text}>{dateText(upcoming[0].booking_date)} · {time(upcoming[0].start_time)}</AppText>
+      <AppText style={styles.location}>⌖ Glamour Salon</AppText>
     </View>
     <Ionicons name="chevron-forward" size={20} color={colors.muted} />
   </View>

@@ -6,7 +6,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +14,7 @@ import { Screen } from "@/components/Screen";
 import { Bundle, getBundles, getSalon, getServices, Salon, Service } from "@/services/catalog";
 import { getApiErrorMessage } from "@/lib/api";
 import { colors, radius, shadows } from "@/constants/theme";
+import { AppText } from "@/components/Typography";
 
 const money = (value: unknown) => `PKR ${Number(value ?? 0).toLocaleString("en-PK", { maximumFractionDigits: 0 })}`;
 const number = (value: unknown) => Number(value ?? 0);
@@ -95,19 +95,6 @@ function bundleKey(bundle: Bundle) {
 
 type SalonData = { salon: Salon; services: Service[]; bundles: Bundle[] };
 type Section = "overview" | "services" | "bundles";
-
-type DemoMeta = {
-  rating: string;
-  reviews: string;
-  distance: string;
-  area: string;
-  badge?: string;
-};
-
-const DEMO_META: DemoMeta[] = [
-  { rating: "4.8", reviews: "230 reviews", distance: "3.2 km", area: "Gulberg, Lahore", badge: "Top Rated" },
-  { rating: "4.6", reviews: "210 reviews", distance: "4.5 km", area: "DHA Phase 5, Lahore" },
-];
 
 export default function CompareScreen() {
   const params = useLocalSearchParams<{ salonIds?: string }>();
@@ -225,10 +212,10 @@ export default function CompareScreen() {
           <View style={styles.emptyIcon}>
             <Ionicons name="git-compare-outline" size={28} color={colors.plum} />
           </View>
-          <Text style={styles.emptyTitle}>Choose two salons</Text>
-          <Text style={styles.emptyText}>Comparison is designed for two salons so pricing and services stay easy to scan.</Text>
+          <AppText style={styles.emptyTitle}>Choose two salons</AppText>
+          <AppText style={styles.emptyText}>Comparison is designed for two salons so pricing and services stay easy to scan.</AppText>
           <Pressable style={styles.primaryButton} onPress={() => router.back()}>
-            <Text style={styles.primaryText}>Back to salons</Text>
+            <AppText style={styles.primaryText}>Back to salons</AppText>
           </Pressable>
         </View>
       </Screen>
@@ -240,7 +227,7 @@ export default function CompareScreen() {
       <Screen>
         <View style={styles.center}>
           <ActivityIndicator color={colors.plum} />
-          <Text style={styles.loadingText}>Building your comparison...</Text>
+          <AppText style={styles.loadingText}>Building your comparison...</AppText>
         </View>
       </Screen>
     );
@@ -259,8 +246,8 @@ export default function CompareScreen() {
           <Ionicons name={icon} size={20} color={colors.plum} />
         </View>
         <View style={styles.sectionCopy}>
-          <Text style={styles.sectionTitle}>{title}</Text>
-          <Text style={styles.sectionSubtitle}>{subtitle}</Text>
+          <AppText style={styles.sectionTitle}>{title}</AppText>
+          <AppText style={styles.sectionSubtitle}>{subtitle}</AppText>
         </View>
         <Ionicons name={open[key] ? "chevron-up" : "chevron-down"} size={20} color={colors.ink} />
       </Pressable>
@@ -276,12 +263,12 @@ export default function CompareScreen() {
         stickyHeaderIndices={[]}
       >
         <View style={styles.navbar}>
-          <Pressable onPress={() => router.back()} style={styles.navIcon} hitSlop={6}>
-            <Ionicons name="chevron-back" size={26} color={colors.ink} />
+          <Pressable onPress={() => router.back()} style={styles.backButton} hitSlop={6}>
+            <Ionicons name="chevron-back" size={21} color={colors.plum} />
           </Pressable>
           <View style={styles.navTitleWrap}>
-            <Text style={styles.navTitle}>Compare Salons</Text>
-            <Text style={styles.navSubtitle}>Find the perfect salon for your beauty needs</Text>
+            <AppText style={styles.navTitle}>Compare Salons</AppText>
+            <AppText style={styles.navSubtitle}>Find the perfect salon for your beauty needs</AppText>
           </View>
           <View style={styles.navActions}>
             <Pressable style={styles.navActionIcon} hitSlop={6}>
@@ -295,7 +282,6 @@ export default function CompareScreen() {
 
         <View style={styles.salonPair}>
           {data.map((item, index) => {
-            const meta = DEMO_META[index];
             const imageFailed = imageErrors[item.salon.id];
             return (
               <Pressable key={item.salon.id} onPress={() => goToSalon(item.salon.id)} style={styles.salonCard}>
@@ -312,32 +298,25 @@ export default function CompareScreen() {
                       onError={() => setImageErrors((current) => ({ ...current, [item.salon.id]: true }))}
                     />
                   )}
-                  {meta.badge ? (
-                    <View style={styles.topRatedBadge}>
-                      <Ionicons name="star" size={11} color="#B57913" />
-                      <Text style={styles.topRatedText}>{meta.badge}</Text>
-                    </View>
-                  ) : null}
                   <View style={styles.favoriteCircle}>
                     <Ionicons name="heart-outline" size={19} color={colors.plum} />
                   </View>
                 </View>
                 <View style={styles.salonCardBody}>
-                  <Text style={styles.salonCardName} numberOfLines={2}>{item.salon.name}</Text>
-                  <View style={styles.ratingLine}>
-                    <Ionicons name="star" size={15} color="#E6A41B" />
-                    <Text style={styles.ratingNumber}>{meta.rating}</Text>
-                    <Text style={styles.reviewText}>({meta.reviews})</Text>
+                  <AppText style={styles.salonCardName} numberOfLines={2}>{item.salon.name}</AppText>
+                  <View style={styles.infoLine}>
+                    <Ionicons name="business-outline" size={15} color={colors.muted} />
+                    <AppText style={styles.infoText}>Salon services & packages</AppText>
                   </View>
                   <View style={styles.infoLine}>
                     <Ionicons name="location-outline" size={15} color={colors.muted} />
-                    <Text style={styles.infoText}>{meta.distance} · {meta.area}</Text>
+                    <AppText style={styles.infoText} numberOfLines={1}>{item.salon.address_line1 || item.salon.city || "Location not provided"}</AppText>
                   </View>
                   <View style={styles.openLine}>
                     <View style={styles.openDot} />
-                    <Text style={styles.openText}>Open</Text>
-                    <Text style={styles.openSeparator}>·</Text>
-                    <Text style={styles.infoText}>Closes at {index === 0 ? "9:00 PM" : "9:00 PM"}</Text>
+                    <AppText style={styles.openText}>{item.salon.is_active ? "Active" : "Unavailable"}</AppText>
+                    <AppText style={styles.openSeparator}>·</AppText>
+                    <AppText style={styles.infoText}>Open {item.salon.opening_time} – {item.salon.closing_time}</AppText>
                   </View>
                 </View>
               </Pressable>
@@ -354,8 +333,8 @@ export default function CompareScreen() {
             <View style={styles.overviewLabels}>
               <View style={styles.overviewHeaderSpacer} />
               {[
-                ["star-outline", "Rating"],
-                ["location-outline", "Distance"],
+                ["business-outline", "Status"],
+                ["location-outline", "Location"],
                 ["time-outline", "Working Hours"],
                 ["cut-outline", "Total Services"],
                 ["gift-outline", "Total Bundles"],
@@ -363,7 +342,7 @@ export default function CompareScreen() {
               ].map(([icon, label]) => (
                 <View key={label} style={styles.overviewLabelRow}>
                   <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={17} color={colors.plumSoft} />
-                  <Text style={styles.overviewLabel}>{label}</Text>
+                  <AppText style={styles.overviewLabel}>{label}</AppText>
                 </View>
               ))}
             </View>
@@ -371,22 +350,15 @@ export default function CompareScreen() {
               const startPrice = item.services.length ? Math.min(...item.services.map((service) => number(service.price))) : 0;
               return (
                 <View key={item.salon.id} style={[styles.overviewColumn, index === 0 && styles.overviewWinnerColumn]}>
-                  {index === 0 ? (
-                    <View style={styles.betterRatedBadge}>
-                      <Ionicons name="trophy-outline" size={12} color={colors.plum} />
-                      <Text style={styles.betterRatedText}>Better Rated</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.overviewBadgeSpacer} />
-                  )}
-                  <Text style={styles.overviewValue}>{DEMO_META[index].rating}</Text>
-                  <Text style={styles.overviewValue}>{DEMO_META[index].distance}</Text>
-                  <Text style={styles.overviewValue}>{item.salon.opening_time} – {item.salon.closing_time}</Text>
-                  <Text style={styles.overviewValue}>{item.services.length}</Text>
-                  <Text style={styles.overviewValue}>{item.bundles.length}</Text>
+                  <View style={styles.overviewBadgeSpacer} />
+                  <AppText style={styles.overviewValue}>{item.salon.is_active ? "Active" : "Unavailable"}</AppText>
+                  <AppText style={styles.overviewValue} numberOfLines={2}>{item.salon.city || item.salon.address_line1 || "Not provided"}</AppText>
+                  <AppText style={styles.overviewValue}>{item.salon.opening_time} – {item.salon.closing_time}</AppText>
+                  <AppText style={styles.overviewValue}>{item.services.length}</AppText>
+                  <AppText style={styles.overviewValue}>{item.bundles.length}</AppText>
                   <View style={styles.priceRow}>
-                    <Text style={styles.overviewPrice}>{startPrice ? money(startPrice) : "—"}</Text>
-                    {index === 1 ? <View style={styles.lowerPriceBadge}><Text style={styles.lowerPriceText}>Lower Price</Text></View> : null}
+                    <AppText style={styles.overviewPrice}>{startPrice ? money(startPrice) : "—"}</AppText>
+                    {index === 1 ? <View style={styles.lowerPriceBadge}><AppText style={styles.lowerPriceText}>Lower Price</AppText></View> : null}
                   </View>
                 </View>
               );
@@ -401,7 +373,7 @@ export default function CompareScreen() {
           "cut-outline",
           <View style={styles.sectionBody}>
             {serviceRows.length === 0 ? (
-              <Text style={styles.noData}>No common services are available to compare.</Text>
+              <AppText style={styles.noData}>No common services are available to compare.</AppText>
             ) : (
               serviceRows.map((row) => {
                 const prices = row.values.map((service) => (service ? number(service.price) : null)).filter((value): value is number => value !== null);
@@ -415,10 +387,10 @@ export default function CompareScreen() {
                         <Ionicons name={icon} size={20} color={colors.plum} />
                       </View>
                       <View style={styles.serviceCopy}>
-                        <Text style={styles.serviceName} numberOfLines={1}>{row.label}</Text>
-                        <Text style={styles.serviceDescription} numberOfLines={1}>
+                        <AppText style={styles.serviceName} numberOfLines={1}>{row.label}</AppText>
+                        <AppText style={styles.serviceDescription} numberOfLines={1}>
                           {row.label === "Haircut & Styling" ? "Cut, wash and style" : "Beauty care service"}
-                        </Text>
+                        </AppText>
                       </View>
                     </View>
                     {row.values.map((service, index) => {
@@ -427,19 +399,19 @@ export default function CompareScreen() {
                         <View key={data[index].salon.id} style={[styles.valueCell, isBest && styles.valueCellBest]}>
                           {service ? (
                             <>
-                              <Text style={[styles.cellPrice, isBest && styles.cellPriceBest]}>{money(service.price)}</Text>
+                              <AppText style={[styles.cellPrice, isBest && styles.cellPriceBest]}>{money(service.price)}</AppText>
                               <View style={styles.durationRow}>
                                 <Ionicons name="time-outline" size={13} color={colors.muted} />
-                                <Text style={styles.cellMeta}>{service.duration_minutes} min</Text>
+                                <AppText style={styles.cellMeta}>{service.duration_minutes} min</AppText>
                               </View>
                               {isBest ? (
                                 <View style={styles.bestBadge}>
-                                  <Text style={styles.bestBadgeText}>Better Value</Text>
+                                  <AppText style={styles.bestBadgeText}>Better Value</AppText>
                                 </View>
                               ) : null}
                             </>
                           ) : (
-                            <Text style={styles.unavailable}>Not offered</Text>
+                            <AppText style={styles.unavailable}>Not offered</AppText>
                           )}
                         </View>
                       );
@@ -458,7 +430,7 @@ export default function CompareScreen() {
           "gift-outline",
           <View style={styles.sectionBody}>
             {bundleRows.length === 0 ? (
-              <Text style={styles.noData}>No bundles are available to compare.</Text>
+              <AppText style={styles.noData}>No bundles are available to compare.</AppText>
             ) : (
               bundleRows.map((row) => {
                 const prices = row.values.map((bundle) => (bundle ? number(bundle.bundle_price) : null)).filter((value): value is number => value !== null);
@@ -470,8 +442,8 @@ export default function CompareScreen() {
                         <Ionicons name="gift-outline" size={20} color={colors.plum} />
                       </View>
                       <View style={styles.serviceCopy}>
-                        <Text style={styles.serviceName} numberOfLines={1}>{row.label}</Text>
-                        <Text style={styles.serviceDescription} numberOfLines={1}>Salon package & savings</Text>
+                        <AppText style={styles.serviceName} numberOfLines={1}>{row.label}</AppText>
+                        <AppText style={styles.serviceDescription} numberOfLines={1}>Salon package & savings</AppText>
                       </View>
                     </View>
                     {row.values.map((bundle, index) => {
@@ -481,16 +453,16 @@ export default function CompareScreen() {
                         <View key={data[index].salon.id} style={[styles.valueCell, styles.bundleCell, isBest && styles.valueCellBest]}>
                           {bundle ? (
                             <>
-                              <Text style={[styles.cellPrice, isBest && styles.cellPriceBest]}>{money(bundle.bundle_price)}</Text>
-                              <Text style={styles.originalPrice}>{money(bundle.original_price)}</Text>
+                              <AppText style={[styles.cellPrice, isBest && styles.cellPriceBest]}>{money(bundle.bundle_price)}</AppText>
+                              <AppText style={styles.originalPrice}>{money(bundle.original_price)}</AppText>
                               <View style={styles.bundleMetaRow}>
-                                <Text style={styles.saveText}>Save {money(savings)}</Text>
-                                {isBest ? <View style={styles.bestBadge}><Text style={styles.bestBadgeText}>Better Value</Text></View> : null}
+                                <AppText style={styles.saveText}>Save {money(savings)}</AppText>
+                                {isBest ? <View style={styles.bestBadge}><AppText style={styles.bestBadgeText}>Better Value</AppText></View> : null}
                               </View>
-                              <Text style={styles.cellMeta}>{bundle.duration_minutes} min</Text>
+                              <AppText style={styles.cellMeta}>{bundle.duration_minutes} min</AppText>
                             </>
                           ) : (
-                            <Text style={styles.unavailable}>Not offered</Text>
+                            <AppText style={styles.unavailable}>Not offered</AppText>
                           )}
                         </View>
                       );
@@ -504,10 +476,10 @@ export default function CompareScreen() {
 
         <View style={styles.footerActions}>
           <Pressable style={styles.detailsButton} onPress={() => goToSalon(data[0].salon.id)}>
-            <Text style={styles.detailsButtonText}>View Salon Details</Text>
+            <AppText style={styles.detailsButtonText}>View Salon Details</AppText>
           </Pressable>
           <Pressable style={styles.bookButton} onPress={() => goToSalon(data[0].salon.id)}>
-            <Text style={styles.bookButtonText}>Book Now</Text>
+            <AppText style={styles.bookButtonText}>Book Now</AppText>
             <Ionicons name="arrow-forward" size={20} color={colors.white} />
           </Pressable>
         </View>
@@ -518,6 +490,7 @@ export default function CompareScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingTop: 8, paddingBottom: 28 },
+  backButton: { width: 42, height: 42, borderRadius: 15, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   navbar: { flexDirection: "row", alignItems: "center", marginBottom: 14 },
   navIcon: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
   navTitleWrap: { flex: 1, alignItems: "center", paddingHorizontal: 4 },

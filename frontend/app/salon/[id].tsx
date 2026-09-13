@@ -6,6 +6,7 @@ import { Screen } from "@/components/Screen";
 import { Bundle, getBundles, getSalon, getServices, Salon, Service } from "@/services/catalog";
 import { getApiErrorMessage } from "@/lib/api";
 import { colors, radius, shadows } from "@/constants/theme";
+import { AppText } from "@/components/Typography";
 
 const money = (value: unknown) => `PKR ${Number(value ?? 0).toLocaleString("en-PK", { maximumFractionDigits: 0 })}`;
 const iconFor = (category: string): keyof typeof Ionicons.glyphMap => {
@@ -67,7 +68,7 @@ export default function SalonServicesScreen() {
   };
 
   if (loading || !salon) {
-    return <Screen><View style={styles.loading}><ActivityIndicator color={colors.plum} size="small" /><Text style={styles.loadingText}>Loading salon menu...</Text></View></Screen>;
+    return <Screen><View style={styles.loading}><ActivityIndicator color={colors.plum} size="small" /><AppText style={styles.loadingText}>Loading salon menu...</AppText></View></Screen>;
   }
 
   return (
@@ -84,58 +85,58 @@ export default function SalonServicesScreen() {
           <View style={styles.salonHero}>
             <View style={styles.salonLogo}><Ionicons name="sparkles-outline" size={35} color={colors.plum} /></View>
             <View style={styles.heroCopy}>
-              <Text style={styles.salonName}>{salon.name}</Text>
-              <View style={styles.ratingRow}><Ionicons name="star" size={14} color={colors.champagne} /><Text style={styles.ratingValue}>4.8</Text><Text style={styles.reviewText}>(230 reviews)</Text></View>
-              <View style={styles.locationRow}><Ionicons name="location-outline" size={14} color={colors.muted} /><Text style={styles.location} numberOfLines={1}>{salon.address_line1 || salon.city || "Location available"}{salon.city && salon.address_line1 ? ` · ${salon.city}` : ""}</Text></View>
-              <View style={styles.openRow}><View style={styles.greenDot} /><Text style={styles.openLabel}>Open</Text><Text style={styles.dotSep}>·</Text><Text style={styles.closeLabel}>Closes at {salon.closing_time}</Text></View>
+              <AppText style={styles.salonName}>{salon.name}</AppText>
+              <View style={styles.ratingRow}><Ionicons name="star" size={14} color={colors.champagne} /><AppText style={styles.ratingValue}>4.8</AppText><AppText style={styles.reviewText}>(230 reviews)</AppText></View>
+              <View style={styles.locationRow}><Ionicons name="location-outline" size={14} color={colors.muted} /><AppText style={styles.location} numberOfLines={1}>{salon.address_line1 || salon.city || "Location available"}{salon.city && salon.address_line1 ? ` · ${salon.city}` : ""}</AppText></View>
+              <View style={styles.openRow}><View style={styles.greenDot} /><AppText style={styles.openLabel}>Open</AppText><AppText style={styles.dotSep}>·</AppText><AppText style={styles.closeLabel}>Closes at {salon.closing_time}</AppText></View>
             </View>
           </View>
 
           <View style={styles.tabs}>
-            <Pressable onPress={() => setTab("services")} style={[styles.tab, tab === "services" && styles.tabActive]}><Text style={[styles.tabText, tab === "services" && styles.tabTextActive]}>Services</Text></Pressable>
-            <Pressable onPress={() => setTab("bundles")} style={[styles.tab, tab === "bundles" && styles.tabActive]}><Text style={[styles.tabText, tab === "bundles" && styles.tabTextActive]}>Bundles</Text></Pressable>
-            {/* <View style={styles.tab}><Text style={styles.tabText}>About</Text></View> */}
-            {/* <View style={styles.tab}><Text style={styles.tabText}>Reviews</Text></View> */}
+            <Pressable onPress={() => setTab("services")} style={[styles.tab, tab === "services" && styles.tabActive]}><AppText style={[styles.tabText, tab === "services" && styles.tabTextActive]}>Services</AppText></Pressable>
+            <Pressable onPress={() => setTab("bundles")} style={[styles.tab, tab === "bundles" && styles.tabActive]}><AppText style={[styles.tabText, tab === "bundles" && styles.tabTextActive]}>Bundles</AppText></Pressable>
+            {/* <View style={styles.tab}><AppText style={styles.tabText}>About</AppText></View> */}
+            {/* <View style={styles.tab}><AppText style={styles.tabText}>Reviews</AppText></View> */}
           </View>
 
           {/* <View style={styles.offerCard}>
             <View style={styles.offerIcon}><Ionicons name="pricetag" size={21} color={colors.champagneLight} /></View>
-            <View style={styles.offerCopy}><Text style={styles.offerTitle}>Special offers</Text><Text style={styles.offerSubtitle}>Ask the salon about current discounts</Text></View>
+            <View style={styles.offerCopy}><AppText style={styles.offerTitle}>Special offers</AppText><AppText style={styles.offerSubtitle}>Ask the salon about current discounts</AppText></View>
             <Ionicons name="chevron-forward" size={20} color={colors.champagneLight} />
           </View> */}
 
           {tab === "services" ? (
             <>
-              <View style={styles.sectionHeader}><View><Text style={styles.sectionTitle}>Popular services</Text><Text style={styles.sectionSubtitle}>{services.length} services available at this salon</Text></View></View>
+              <View style={styles.sectionHeader}><View><AppText style={styles.sectionTitle}>Popular services</AppText><AppText style={styles.sectionSubtitle}>{services.length} services available at this salon</AppText></View></View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>
-                {categories.map((item) => <Pressable key={item} onPress={() => setCategory(item)} style={[styles.categoryChip, category === item && styles.categoryActive]}><Text style={[styles.categoryText, category === item && styles.categoryTextActive]}>{item}</Text></Pressable>)}
+                {categories.map((item) => <Pressable key={item} onPress={() => setCategory(item)} style={[styles.categoryChip, category === item && styles.categoryActive]}><AppText style={[styles.categoryText, category === item && styles.categoryTextActive]}>{item}</AppText></Pressable>)}
               </ScrollView>
               <View style={styles.serviceList}>
                 {visibleServices.map((service) => (
                   <View key={service.id} style={styles.serviceCard}>
                     <View style={styles.serviceIcon}><Ionicons name={iconFor(service.category)} size={24} color={colors.plum} /></View>
                     <View style={styles.serviceCopy}>
-                      <Text style={styles.serviceName} numberOfLines={2}>{service.name}</Text>
-                      <Text style={styles.serviceDescription} numberOfLines={2}>{service.description || `${service.category} treatment`}</Text>
-                      <View style={styles.metaRow}><Ionicons name="time-outline" size={13} color={colors.muted} /><Text style={styles.metaText}>{service.duration_minutes} min</Text><View style={styles.metaDot} /><Text style={styles.metaText}>{service.category}</Text></View>
-                      <Text style={styles.price}>{money(service.price)}</Text>
+                      <AppText style={styles.serviceName} numberOfLines={2}>{service.name}</AppText>
+                      <AppText style={styles.serviceDescription} numberOfLines={2}>{service.description || `${service.category} treatment`}</AppText>
+                      <View style={styles.metaRow}><Ionicons name="time-outline" size={13} color={colors.muted} /><AppText style={styles.metaText}>{service.duration_minutes} min</AppText><View style={styles.metaDot} /><AppText style={styles.metaText}>{service.category}</AppText></View>
+                      <AppText style={styles.price}>{money(service.price)}</AppText>
                     </View>
-                    <Pressable onPress={() => bookService(service)} style={styles.bookButton}><Text style={styles.bookText}>Book</Text></Pressable>
+                    <Pressable onPress={() => bookService(service)} style={styles.bookButton}><AppText style={styles.bookText}>Book</AppText></Pressable>
                   </View>
                 ))}
               </View>
             </>
           ) : (
             <>
-              <View style={styles.sectionHeader}><View><Text style={styles.sectionTitle}>Signature bundles</Text><Text style={styles.sectionSubtitle}>Curated services at a better value</Text></View></View>
-              {bundles.length === 0 ? <View style={styles.empty}><Ionicons name="gift-outline" size={28} color={colors.plum} /><Text style={styles.emptyTitle}>No bundles available</Text><Text style={styles.emptyText}>This salon currently offers individual services.</Text></View> : <View style={styles.bundleList}>{bundles.map((bundle) => { const saved = Number(bundle.original_price) - Number(bundle.bundle_price); return <View key={bundle.id} style={styles.bundleCard}><View style={styles.bundleHeader}><View style={styles.bundleIcon}><Ionicons name="gift-outline" size={21} color={colors.champagne} /></View><View style={styles.bundleTitleCopy}><Text style={styles.bundleName}>{bundle.name}</Text><Text style={styles.bundleDescription} numberOfLines={2}>{bundle.description || bundle.services.map((s) => s.name).join(" + ")}</Text></View></View><View style={styles.bundleServices}>{bundle.services.slice(0, 4).map((s) => <View key={s.id} style={styles.miniTag}><Text style={styles.miniTagText}>{s.name}</Text></View>)}</View><View style={styles.bundleBottom}><View><View style={styles.bundlePriceRow}><Text style={styles.bundlePrice}>{money(bundle.bundle_price)}</Text><Text style={styles.originalPrice}>{money(bundle.original_price)}</Text></View><Text style={styles.saveText}>Save {money(saved)} · {bundle.duration_minutes} min</Text></View><Pressable onPress={() => bookBundle(bundle)} style={styles.bookButton}><Text style={styles.bookText}>Book</Text></Pressable></View></View>; })}</View>}
+              <View style={styles.sectionHeader}><View><AppText style={styles.sectionTitle}>Signature bundles</AppText><AppText style={styles.sectionSubtitle}>Curated services at a better value</AppText></View></View>
+              {bundles.length === 0 ? <View style={styles.empty}><Ionicons name="gift-outline" size={28} color={colors.plum} /><AppText style={styles.emptyTitle}>No bundles available</AppText><AppText style={styles.emptyText}>This salon currently offers individual services.</AppText></View> : <View style={styles.bundleList}>{bundles.map((bundle) => { const saved = Number(bundle.original_price) - Number(bundle.bundle_price); return <View key={bundle.id} style={styles.bundleCard}><View style={styles.bundleHeader}><View style={styles.bundleIcon}><Ionicons name="gift-outline" size={21} color={colors.champagne} /></View><View style={styles.bundleTitleCopy}><AppText style={styles.bundleName}>{bundle.name}</AppText><AppText style={styles.bundleDescription} numberOfLines={2}>{bundle.description || bundle.services.map((s) => s.name).join(" + ")}</AppText></View></View><View style={styles.bundleServices}>{bundle.services.slice(0, 4).map((s) => <View key={s.id} style={styles.miniTag}><AppText style={styles.miniTagText}>{s.name}</AppText></View>)}</View><View style={styles.bundleBottom}><View><View style={styles.bundlePriceRow}><AppText style={styles.bundlePrice}>{money(bundle.bundle_price)}</AppText><AppText style={styles.originalPrice}>{money(bundle.original_price)}</AppText></View><AppText style={styles.saveText}>Save {money(saved)} · {bundle.duration_minutes} min</AppText></View><Pressable onPress={() => bookBundle(bundle)} style={styles.bookButton}><AppText style={styles.bookText}>Book</AppText></Pressable></View></View>; })}</View>}
             </>
           )}
         </ScrollView>
 
         <Pressable style={styles.bottomAction} onPress={() => setTab(tab === "services" ? "bundles" : "services")}>
           <View style={styles.bottomIcon}><Ionicons name={tab === "services" ? "gift-outline" : "cut-outline"} size={20} color={colors.plum} /></View>
-          <View style={styles.bottomCopy}><Text style={styles.bottomTitle}>{tab === "services" ? "Explore bundles" : "Browse individual services"}</Text><Text style={styles.bottomSubtitle}>Choose what works best for you</Text></View>
+          <View style={styles.bottomCopy}><AppText style={styles.bottomTitle}>{tab === "services" ? "Explore bundles" : "Browse individual services"}</AppText><AppText style={styles.bottomSubtitle}>Choose what works best for you</AppText></View>
           <Ionicons name="chevron-forward" size={22} color={colors.white} />
         </Pressable>
       </View>

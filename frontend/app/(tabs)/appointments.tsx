@@ -7,6 +7,7 @@ import { AppButton } from "@/components/AppButton";
 import { Booking, getMyBookings } from "@/services/bookings";
 import { getApiErrorMessage } from "@/lib/api";
 import { colors, radius, shadows } from "@/constants/theme";
+import { AppText, AppTextInput } from "@/components/Typography";
 
 const money = (v: unknown) => `PKR ${Number(v ?? 0).toLocaleString("en-PK", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 function dateText(value: string) { return new Date(`${value}T12:00:00`).toLocaleDateString("en-PK", { weekday: "short", day: "numeric", month: "short", year: "numeric" }); }
@@ -78,16 +79,16 @@ export default function AppointmentsScreen() {
     >
       <View style={styles.headerRow}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.kicker}>YOUR VISITS</Text>
-          <Text style={styles.title}>My appointments</Text>
-          <Text style={styles.subtitle}>Everything from your next visit to your salon history.</Text>
+          <AppText style={styles.kicker}>YOUR VISITS</AppText>
+          <AppText style={styles.title}>My appointments</AppText>
+          <AppText style={styles.subtitle}>Everything from your next visit to your salon history.</AppText>
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel="Filter appointments by date" onPress={() => setFilterOpen(true)} style={[styles.headerIcon, dateFilter !== "ALL" && styles.headerIconActive]}><Ionicons name="calendar-outline" size={21} color={colors.plum} /><View style={styles.filterBadge}><Ionicons name="options-outline" size={9} color={colors.white} /></View></Pressable>
       </View>
 
       <View style={styles.searchBox}>
         <Ionicons name="search-outline" size={19} color={colors.muted} />
-        <TextInput
+        <AppTextInput
           value={search}
           onChangeText={setSearch}
           placeholder="Search by service or booking number"
@@ -108,13 +109,13 @@ export default function AppointmentsScreen() {
       </View>
 
       <View style={styles.resultRow}>
-        <Text style={styles.resultTitle}>{activeTab === "UPCOMING" ? "Upcoming visits" : activeTab === "COMPLETED" ? "Completed visits" : "Cancelled visits"}</Text>
-        <Text style={styles.resultCount}>{filteredItems.length} {filteredItems.length === 1 ? "visit" : "visits"}</Text>
+        <AppText style={styles.resultTitle}>{activeTab === "UPCOMING" ? "Upcoming visits" : activeTab === "COMPLETED" ? "Completed visits" : "Cancelled visits"}</AppText>
+        <AppText style={styles.resultCount}>{filteredItems.length} {filteredItems.length === 1 ? "visit" : "visits"}</AppText>
       </View>
 
-      {dateFilter !== "ALL" && <Pressable onPress={() => setDateFilter("ALL")} style={styles.filterChip}><Ionicons name="calendar-outline" size={13} color={colors.plum} /><Text style={styles.filterChipText}>{dateFilter === "TODAY" ? "Today" : dateFilter === "NEXT_7" ? "Next 7 days" : "This month"}</Text><Ionicons name="close" size={14} color={colors.plum} /></Pressable>}
+      {dateFilter !== "ALL" && <Pressable onPress={() => setDateFilter("ALL")} style={styles.filterChip}><Ionicons name="calendar-outline" size={13} color={colors.plum} /><AppText style={styles.filterChipText}>{dateFilter === "TODAY" ? "Today" : dateFilter === "NEXT_7" ? "Next 7 days" : "This month"}</AppText><Ionicons name="close" size={14} color={colors.plum} /></Pressable>}
 
-      {loading ? <View style={styles.state}><Ionicons name="time-outline" size={24} color={colors.champagne} /><Text style={styles.hint}>Loading appointments...</Text></View> : filteredItems.length === 0 ? (
+      {loading ? <View style={styles.state}><Ionicons name="time-outline" size={24} color={colors.champagne} /><AppText style={styles.hint}>Loading appointments...</AppText></View> : filteredItems.length === 0 ? (
         <EmptyState tab={activeTab} searching={search.length > 0} clearSearch={() => setSearch("")} />
       ) : filteredItems.map(b => <AppointmentCard key={b.id} booking={b} />)}
     </ScrollView>
@@ -122,7 +123,7 @@ export default function AppointmentsScreen() {
       <Pressable style={styles.modalBackdrop} onPress={() => setFilterOpen(false)}>
         <Pressable style={styles.filterSheet} onPress={e => e.stopPropagation()}>
           <View style={styles.sheetHandle} />
-          <View style={styles.sheetHeader}><View><Text style={styles.sheetKicker}>FILTER</Text><Text style={styles.sheetTitle}>Appointment dates</Text></View><Pressable onPress={() => setFilterOpen(false)} style={styles.closeSheet}><Ionicons name="close" size={20} color={colors.plum} /></Pressable></View>
+          <View style={styles.sheetHeader}><View><AppText style={styles.sheetKicker}>FILTER</AppText><AppText style={styles.sheetTitle}>Appointment dates</AppText></View><Pressable onPress={() => setFilterOpen(false)} style={styles.closeSheet}><Ionicons name="close" size={20} color={colors.plum} /></Pressable></View>
           {([
             ["ALL", "All dates", "Show every appointment"],
             ["TODAY", "Today", "Appointments scheduled today"],
@@ -130,7 +131,7 @@ export default function AppointmentsScreen() {
             ["THIS_MONTH", "This month", "Appointments in the current month"],
           ] as const).map(([key, label, description]) => <Pressable key={key} onPress={() => { setDateFilter(key); setFilterOpen(false); }} style={[styles.filterOption, dateFilter === key && styles.filterOptionActive]}>
             <View style={[styles.optionIcon, dateFilter === key && styles.optionIconActive]}><Ionicons name={key === "ALL" ? "apps-outline" : "calendar-outline"} size={18} color={dateFilter === key ? colors.white : colors.plum} /></View>
-            <View style={{ flex: 1 }}><Text style={[styles.optionLabel, dateFilter === key && styles.optionLabelActive]}>{label}</Text><Text style={styles.optionDescription}>{description}</Text></View>
+            <View style={{ flex: 1 }}><AppText style={[styles.optionLabel, dateFilter === key && styles.optionLabelActive]}>{label}</AppText><AppText style={styles.optionDescription}>{description}</AppText></View>
             {dateFilter === key && <Ionicons name="checkmark-circle" size={20} color={colors.champagne} />}
           </Pressable>)}
         </Pressable>
@@ -141,8 +142,8 @@ export default function AppointmentsScreen() {
 
 function Tab({ label, count, active, onPress }: { label: string; count: number; active: boolean; onPress: () => void }) {
   return <Pressable onPress={onPress} style={[styles.tab, active && styles.activeTab]}>
-    <Text style={[styles.tabText, active && styles.activeText]}>{label}</Text>
-    <View style={[styles.count, active && styles.activeCount]}><Text style={[styles.countText, active && styles.activeCountText]}>{count}</Text></View>
+    <AppText style={[styles.tabText, active && styles.activeText]}>{label}</AppText>
+    <View style={[styles.count, active && styles.activeCount]}><AppText style={[styles.countText, active && styles.activeCountText]}>{count}</AppText></View>
   </Pressable>;
 }
 
@@ -150,8 +151,8 @@ function AppointmentCard({ booking: b }: { booking: Booking }) {
   return <View style={styles.card}>
     <View style={styles.cardTop}>
       <View style={{ flex: 1 }}>
-        <Text style={styles.date}>{dateText(b.booking_date)}</Text>
-        <Text style={styles.time}>{time(b.start_time)} - {time(b.end_time)}</Text>
+        <AppText style={styles.date}>{dateText(b.booking_date)}</AppText>
+        <AppText style={styles.time}>{time(b.start_time)} - {time(b.end_time)}</AppText>
       </View>
       <Status value={b.status} />
     </View>
@@ -159,14 +160,14 @@ function AppointmentCard({ booking: b }: { booking: Booking }) {
     <View style={styles.serviceRow}>
       <View style={styles.serviceIcon}><Ionicons name="cut-outline" size={18} color={colors.plum} /></View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.itemTitle} numberOfLines={2}>{b.items.map(i => i.name).join(" + ")}</Text>
-        <Text style={styles.location}><Ionicons name="location-outline" size={12} color={colors.muted} /> Glamour Salon</Text>
+        <AppText style={styles.itemTitle} numberOfLines={2}>{b.items.map(i => i.name).join(" + ")}</AppText>
+        <AppText style={styles.location}><Ionicons name="location-outline" size={12} color={colors.muted} /> Glamour Salon</AppText>
       </View>
     </View>
 
     <View style={styles.metaRow}>
-      <View><Text style={styles.metaLabel}>Booking</Text><Text style={styles.metaValue}>#{b.booking_number}</Text></View>
-      <View style={{ alignItems: "flex-end" }}><Text style={styles.metaLabel}>Total</Text><Text style={styles.total}>{money(b.total)}</Text></View>
+      <View><AppText style={styles.metaLabel}>Booking</AppText><AppText style={styles.metaValue}>#{b.booking_number}</AppText></View>
+      <View style={{ alignItems: "flex-end" }}><AppText style={styles.metaLabel}>Total</AppText><AppText style={styles.total}>{money(b.total)}</AppText></View>
     </View>
 
     <AppButton
@@ -183,8 +184,8 @@ function EmptyState({ tab, searching, clearSearch }: { tab: TabKey; searching: b
   const message = searching ? "Try another service name or booking number." : tab === "UPCOMING" ? "Book your next salon visit and it will appear here." : tab === "COMPLETED" ? "Your completed salon visits will appear here." : "Appointments you cancel will appear here.";
   return <View style={styles.empty}>
     <View style={styles.emptyIcon}><Ionicons name={searching ? "search-outline" : "calendar-outline"} size={25} color={colors.plum} /></View>
-    <Text style={styles.emptyTitle}>{title}</Text>
-    <Text style={styles.hint}>{message}</Text>
+    <AppText style={styles.emptyTitle}>{title}</AppText>
+    <AppText style={styles.hint}>{message}</AppText>
     {searching ? <AppButton title="Clear search" variant="secondary" onPress={clearSearch} style={styles.emptyButton} /> : tab === "UPCOMING" ? <AppButton title="Browse services" onPress={() => router.push("/(tabs)/services")} style={styles.emptyButton} /> : null}
   </View>;
 }
@@ -196,7 +197,7 @@ function Status({ value }: { value: string }) {
   const active = !completed && !cancelled;
   return <View style={[styles.status, { backgroundColor: completed ? "#EEE5F3" : cancelled ? "#F8E9E7" : "#E8F4EE" }]}>
     <View style={[styles.statusDot, { backgroundColor: completed ? colors.plumSoft : cancelled ? colors.danger : colors.success }]} />
-    <Text style={[styles.statusText, { color: completed ? colors.plum : cancelled ? colors.danger : colors.success }]}>{status.replace("_", " ")}</Text>
+    <AppText style={[styles.statusText, { color: completed ? colors.plum : cancelled ? colors.danger : colors.success }]}>{status.replace("_", " ")}</AppText>
   </View>;
 }
 

@@ -7,6 +7,7 @@ import { AppButton } from "@/components/AppButton";
 import { Booking, cancelBooking, getBooking } from "@/services/bookings";
 import { getApiErrorMessage } from "@/lib/api";
 import { colors, radius, shadows } from "@/constants/theme";
+import { AppText } from "@/components/Typography";
 
 const money = (v: unknown) => `PKR ${Number(v ?? 0).toLocaleString("en-PK", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 function dateText(value: string) { return new Date(`${value}T12:00:00`).toLocaleDateString("en-PK", { weekday: "long", day: "numeric", month: "long", year: "numeric" }); }
@@ -40,8 +41,8 @@ export default function BookingDetailsScreen() {
 
   const canCancel = booking && ["PENDING", "CONFIRMED"].includes(booking.status.toUpperCase());
 
-  if (loading) return <Screen><View style={styles.center}><Text style={styles.hint}>Loading booking...</Text></View></Screen>;
-  if (!booking) return <Screen><View style={styles.center}><Text style={styles.hint}>Booking not found.</Text></View></Screen>;
+  if (loading) return <Screen><View style={styles.center}><AppText style={styles.hint}>Loading booking...</AppText></View></Screen>;
+  if (!booking) return <Screen><View style={styles.center}><AppText style={styles.hint}>Booking not found.</AppText></View></Screen>;
 
   const isCancelled = cancelled(booking.status);
   const isCompleted = booking.status.toUpperCase() === "COMPLETED";
@@ -49,36 +50,36 @@ export default function BookingDetailsScreen() {
   return <Screen><ScrollView contentContainerStyle={styles.content}>
     <View style={styles.pageHeader}>
       <View style={styles.backCircle}><Pressable onPress={() => router.back()} hitSlop={8}><Ionicons name="arrow-back" size={20} color={colors.plum} /></Pressable></View>
-      <View style={{ flex: 1 }}><Text style={styles.kicker}>YOUR VISIT</Text><Text style={styles.title}>Appointment details</Text></View>
+      <View style={{ flex: 1 }}><AppText style={styles.kicker}>YOUR VISIT</AppText><AppText style={styles.title}>Appointment details</AppText></View>
     </View>
 
     <View style={styles.hero}>
-      <View style={styles.heroTop}><Text style={styles.number}>{booking.booking_number}</Text><Status value={booking.status} /></View>
-      <Text style={styles.date}>{dateText(booking.booking_date)}</Text>
-      <View style={styles.timeRow}><Ionicons name="time-outline" size={16} color={colors.champagneLight} /><Text style={styles.time}>{time(booking.start_time)} - {time(booking.end_time)}</Text></View>
-      <View style={styles.heroFooter}><View><Text style={styles.heroLabel}>SALON</Text><Text style={styles.heroValue}>Glamour Salon</Text></View><View style={{ alignItems: "flex-end" }}><Text style={styles.heroLabel}>TOTAL</Text><Text style={styles.heroTotal}>{money(booking.total)}</Text></View></View>
+      <View style={styles.heroTop}><AppText style={styles.number}>{booking.booking_number}</AppText><Status value={booking.status} /></View>
+      <AppText style={styles.date}>{dateText(booking.booking_date)}</AppText>
+      <View style={styles.timeRow}><Ionicons name="time-outline" size={16} color={colors.champagneLight} /><AppText style={styles.time}>{time(booking.start_time)} - {time(booking.end_time)}</AppText></View>
+      <View style={styles.heroFooter}><View><AppText style={styles.heroLabel}>SALON</AppText><AppText style={styles.heroValue}>Glamour Salon</AppText></View><View style={{ alignItems: "flex-end" }}><AppText style={styles.heroLabel}>TOTAL</AppText><AppText style={styles.heroTotal}>{money(booking.total)}</AppText></View></View>
     </View>
 
-    <Text style={styles.section}>Services</Text>
+    <AppText style={styles.section}>Services</AppText>
     <View style={styles.card}>{booking.items.map(i => <View key={i.id} style={styles.item}>
       <View style={styles.itemIcon}><Ionicons name="cut-outline" size={17} color={colors.plum} /></View>
-      <View style={{ flex: 1 }}><Text style={styles.itemName}>{i.name}</Text><Text style={styles.itemMeta}>{i.item_type} · Qty {i.quantity}</Text></View>
-      <Text style={styles.itemPrice}>{money(i.total_price)}</Text>
+      <View style={{ flex: 1 }}><AppText style={styles.itemName}>{i.name}</AppText><AppText style={styles.itemMeta}>{i.item_type} · Qty {i.quantity}</AppText></View>
+      <AppText style={styles.itemPrice}>{money(i.total_price)}</AppText>
     </View>)}</View>
 
-    <Text style={styles.section}>Payment summary</Text>
+    <AppText style={styles.section}>Payment summary</AppText>
     <View style={styles.card}>
       <Line label="Subtotal" value={money(booking.subtotal)} />
       <Line label="Discount" value={`- ${money(booking.discount)}`} />
       <View style={styles.divider} />
       <Line label="Total" value={money(booking.total)} bold />
-      <View style={styles.paymentPill}><Ionicons name="wallet-outline" size={15} color={colors.plum} /><Text style={styles.paymentText}>{booking.payment_method} · {booking.payment_status}</Text></View>
+      <View style={styles.paymentPill}><Ionicons name="wallet-outline" size={15} color={colors.plum} /><AppText style={styles.paymentText}>{booking.payment_method} · {booking.payment_status}</AppText></View>
     </View>
 
-    {isCompleted && <View style={styles.infoBox}><Ionicons name="checkmark-circle" size={20} color={colors.success} /><View style={{ flex: 1 }}><Text style={styles.infoTitle}>Visit completed</Text><Text style={styles.hintLeft}>Thank you for visiting Glamour Salon.</Text></View></View>}
-    {isCancelled && <View style={styles.cancelledBox}><Ionicons name="close-circle" size={20} color={colors.danger} /><View style={{ flex: 1 }}><Text style={styles.cancelledTitle}>Appointment cancelled</Text><Text style={styles.hintLeft}>This appointment is no longer active.</Text></View></View>}
+    {isCompleted && <View style={styles.infoBox}><Ionicons name="checkmark-circle" size={20} color={colors.success} /><View style={{ flex: 1 }}><AppText style={styles.infoTitle}>Visit completed</AppText><AppText style={styles.hintLeft}>Thank you for visiting Glamour Salon.</AppText></View></View>}
+    {isCancelled && <View style={styles.cancelledBox}><Ionicons name="close-circle" size={20} color={colors.danger} /><View style={{ flex: 1 }}><AppText style={styles.cancelledTitle}>Appointment cancelled</AppText><AppText style={styles.hintLeft}>This appointment is no longer active.</AppText></View></View>}
 
-    {canCancel ? <View style={styles.dangerBox}><View style={styles.dangerHeader}><Ionicons name="alert-circle-outline" size={19} color={colors.danger} /><Text style={styles.dangerTitle}>Need to cancel?</Text></View><Text style={styles.hintLeft}>Cancelling releases the slot. If the booking was paid, the backend processes the wallet refund.</Text><AppButton title={cancelling ? "Cancelling..." : "Cancel appointment"} variant="secondary" disabled={cancelling} onPress={() => Alert.alert("Cancel appointment", "Are you sure?", [{ text: "Keep", style: "cancel" }, { text: "Cancel appointment", style: "destructive", onPress: cancel }])} style={styles.fullButton} /></View> : null}
+    {canCancel ? <View style={styles.dangerBox}><View style={styles.dangerHeader}><Ionicons name="alert-circle-outline" size={19} color={colors.danger} /><AppText style={styles.dangerTitle}>Need to cancel?</AppText></View><AppText style={styles.hintLeft}>Cancelling releases the slot. If the booking was paid, the backend processes the wallet refund.</AppText><AppButton title={cancelling ? "Cancelling..." : "Cancel appointment"} variant="secondary" disabled={cancelling} onPress={() => Alert.alert("Cancel appointment", "Are you sure?", [{ text: "Keep", style: "cancel" }, { text: "Cancel appointment", style: "destructive", onPress: cancel }])} style={styles.fullButton} /></View> : null}
 
     <AppButton title="Back to appointments" variant="primary" onPress={() => router.replace("/(tabs)/appointments")} style={styles.fullButton} />
   </ScrollView></Screen>;
@@ -88,10 +89,10 @@ function Status({ value }: { value: string }) {
   const status = value.toUpperCase();
   const complete = status === "COMPLETED";
   const cancel = cancelled(status);
-  return <View style={[styles.status, { backgroundColor: complete ? "#EEE5F3" : cancel ? "#F8E9E7" : "#E8F4EE" }]}><View style={[styles.statusDot, { backgroundColor: complete ? colors.plumSoft : cancel ? colors.danger : colors.success }]} /><Text style={[styles.statusText, { color: complete ? colors.plum : cancel ? colors.danger : colors.success }]}>{status.replace("_", " ")}</Text></View>;
+  return <View style={[styles.status, { backgroundColor: complete ? "#EEE5F3" : cancel ? "#F8E9E7" : "#E8F4EE" }]}><View style={[styles.statusDot, { backgroundColor: complete ? colors.plumSoft : cancel ? colors.danger : colors.success }]} /><AppText style={[styles.statusText, { color: complete ? colors.plum : cancel ? colors.danger : colors.success }]}>{status.replace("_", " ")}</AppText></View>;
 }
 
-function Line({ label, value, bold = false }: { label: string; value: string; bold?: boolean }) { return <View style={styles.line}><Text style={[styles.lineLabel, bold && styles.bold]}>{label}</Text><Text style={[styles.lineValue, bold && styles.bold]}>{value}</Text></View>; }
+function Line({ label, value, bold = false }: { label: string; value: string; bold?: boolean }) { return <View style={styles.line}><AppText style={[styles.lineLabel, bold && styles.bold]}>{label}</AppText><AppText style={[styles.lineValue, bold && styles.bold]}>{value}</AppText></View>; }
 
 const styles = StyleSheet.create({
   content: { paddingVertical: 20, paddingBottom: 50 },

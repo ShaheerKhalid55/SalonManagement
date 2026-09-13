@@ -21,6 +21,14 @@ export interface Reminder {
   created_at: string;
 }
 
+export async function registerDeviceToken(token: string, provider = "EXPO") {
+  const { data } = await api.post<{ message: string }>("/notifications/device-token", {
+    token,
+    provider,
+  });
+  return data;
+}
+
 export async function getNotifications(unreadOnly = false) {
   const { data } = await api.get<Notification[]>("/notifications", {
     params: { unread_only: unreadOnly },

@@ -1,17 +1,18 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, TextInput, TextInputProps, View, Pressable } from "react-native";
+import { StyleSheet, TextInput as RNTextInput, TextInputProps, View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, radius } from "@/constants/theme";
+import { AppText, AppTextInput } from "@/components/Typography";
 
-export function AppInput({ label, error, secureTextEntry, inputRef, ...props }: TextInputProps & { label: string; error?: string; inputRef?: React.Ref<TextInput> }) {
+export function AppInput({ label, error, secureTextEntry, inputRef, ...props }: TextInputProps & { label: string; error?: string; inputRef?: React.Ref<RNTextInput> }) {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = Boolean(secureTextEntry);
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>{label}</Text>
+      <AppText style={styles.label}>{label}</AppText>
       <View style={[styles.inputContainer, error && styles.inputError]}>
-        <TextInput
+        <AppTextInput
           ref={inputRef}
           {...props}
           secureTextEntry={isPassword ? !showPassword : secureTextEntry}
@@ -33,7 +34,7 @@ export function AppInput({ label, error, secureTextEntry, inputRef, ...props }: 
           </Pressable>
         )}
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <AppText style={styles.error}>{error}</AppText> : null}
     </View>
   );
 }

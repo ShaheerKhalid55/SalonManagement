@@ -8,6 +8,7 @@ import { AppInput } from "@/components/AppInput";
 import { useAuth } from "@/context/AuthContext";
 import { getApiErrorMessage } from "@/lib/api";
 import { colors } from "@/constants/theme";
+import { AppText } from "@/components/Typography";
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -51,12 +52,12 @@ export default function Login() {
         >
           <View style={styles.brand}>
             <View style={styles.logo}><Ionicons name="sparkles" size={24} color={colors.champagne} /></View>
-            <Text style={styles.brandName}>Salon.</Text>
-            <Text style={styles.brandTag}>BEAUTY & YOU</Text>
+            <AppText style={styles.brandName}>Salon.</AppText>
+            <AppText style={styles.brandTag}>BEAUTY & YOU</AppText>
           </View>
 
-          <Text style={styles.title}>Welcome back 👋</Text>
-          <Text style={styles.subtitle}>Log in to continue your beauty journey.</Text>
+          <AppText style={styles.title}>Welcome back 👋</AppText>
+          <AppText style={styles.subtitle}>Log in to continue your beauty journey.</AppText>
 
           <AppInput
             label="Email or phone"
@@ -83,11 +84,11 @@ export default function Login() {
               onSubmitEditing={submit}
             />
 
-          <Text style={styles.forgot}>Forgot password?</Text>
+          <AppText style={styles.forgot}>Forgot password?</AppText>
           <AppButton title="Login" onPress={submit} loading={loading} />
 
           <View style={styles.or}>
-            <View style={styles.line} /><Text style={styles.orText}>Or continue with</Text><View style={styles.line} />
+            <View style={styles.line} /><AppText style={styles.orText}>Or continue with</AppText><View style={styles.line} />
           </View>
 
           <View style={styles.socials}>
@@ -97,7 +98,7 @@ export default function Login() {
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
+            <AppText style={styles.footerText}>Don't have an account? </AppText>
             <Link href="/(auth)/register" style={styles.link}>Sign up</Link>
           </View>
         </ScrollView>
@@ -111,7 +112,7 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, justifyContent: "center", paddingVertical: 30, paddingBottom: 50 },
   brand: { alignItems: "center", marginBottom: 28 },
   logo: { width: 58, height: 58, borderRadius: 20, backgroundColor: colors.plum, alignItems: "center", justifyContent: "center" },
-  brandName: { fontFamily: "Georgia", fontSize: 30, color: colors.plum, marginTop: 9 },
+  brandName: { fontSize: 30, color: colors.plum, marginTop: 9 },
   brandTag: { fontSize: 8, fontWeight: "900", letterSpacing: 2, color: colors.champagne, marginTop: 2 },
   title: { color: colors.ink, fontSize: 29, fontWeight: "900", textAlign: "center" },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: "center", marginTop: 5, marginBottom: 26 },
