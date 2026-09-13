@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.booking import Booking
 from app.models.reminder import Reminder
+from app.models.notification import Notification
 from app.models.salon import Salon
 from app.models.slot import SalonSlot
 from app.models.user import User
@@ -81,4 +82,56 @@ async def generate_evening_empty_slot_reminders(
             created.append(reminder)
 
     await db.flush()
+    return created
+
+async def generate_appointment_tomorrow_reminders(
+    db: AsyncSession,
+    target_date: date,
+):
+    """Create and push one reminder for every confirmed appointment on target_date."""
+    result = await db.execute(
+        select(Booking, Salon)
+        .join(Salon, Salon.id == Booking.salon_id)
+        .where(
+            Booking.booking_date == target_date,
+            Booking.status == "CONFIRMED",
+        )
+    )
+    rows = result.all()
+    created = []
+
+    for booking, salon in rows:
+        existing = await db.execute(
+            select(Notification).where(
+                Notification.booking_id == booking.id,
+                Notification.notification_type == "APPOINTMENT_REMINDER",
+            )
+        )
+        if existing.scalar_one_or_none():
+            continue
+
+        notification = await create_notification(
+            db=db,
+            user_id=booking.customer_id,
+            booking_id=booking.id,
+            notification_type="APPOINTMENT_REMINDER",
+            title="Appointment Tomorrow",
+            message=(
+                f"Reminder: your appointment at {salon.name} is tomorrow at "
+                f"{booking.start_time.strftime('%I:%M %p').lstrip('0')}."
+            ),
+            data={
+                "screen": "booking",
+                "booking_id": booking.id,
+                "salon_id": booking.salon_id,
+            },
+        )
+        created.append(notification)
+
+    await db.commit()
+
+    # Push after the notification rows are committed so the in-app history is reliable.
+    for notification in created:
+        await send_push_notification(db, notification)
+
     return created
