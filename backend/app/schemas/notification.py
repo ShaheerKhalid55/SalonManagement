@@ -7,6 +7,7 @@ class DeviceTokenRequest(BaseModel):
 
 class NotificationResponse(BaseModel):
     id: int
+    booking_id: int | None
     notification_type: str
     title: str
     message: str

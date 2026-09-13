@@ -8,7 +8,7 @@ from app.dependencies.auth import get_current_user, require_roles
 from app.models.reminder import Reminder
 from app.models.user import User
 from app.schemas.reminder import ReminderResponse
-from app.services.reminders import generate_evening_empty_slot_reminders
+from app.services.reminders import generate_evening_empty_slot_reminders, generate_appointment_tomorrow_reminders
 
 router = APIRouter(prefix="/api/v1/reminders", tags=["Reminders"])
 
@@ -23,6 +23,18 @@ async def generate_evening_reminders(
     for reminder in reminders:
         await db.refresh(reminder)
     return reminders
+
+@router.post("/generate-appointment-tomorrow")
+async def generate_appointment_tomorrow(
+    target_date: date | None = None,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_roles("ADMIN")),
+):
+    """Manual/admin trigger for testing the appointment-tomorrow reminder job."""
+    from datetime import timedelta
+    reminder_date = target_date or (date.today() + timedelta(days=1))
+    notifications = await generate_appointment_tomorrow_reminders(db, reminder_date)
+    return {"reminder_date": reminder_date, "created": len(notifications)}
 
 @router.get("", response_model=list[ReminderResponse])
 async def list_my_reminders(

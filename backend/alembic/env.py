@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.database import Base
 from app.models import (
     User, Salon, Service, Bundle, BundleService,
-    SalonSlot, Booking, BookingItem,
+    SalonSlot, Booking, BookingItem, Wallet, WalletTransaction, Referral, ReferralCode, DeviceToken, Notification, Reminder,
 )
 
 config = context.config

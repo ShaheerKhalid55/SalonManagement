@@ -1,4 +1,13 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
+
+from app.services.notification_scheduler import start_notification_scheduler, stop_notification_scheduler
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    start_notification_scheduler()
+    yield
+    stop_notification_scheduler()
 
 from app.routers import (
     auth,
@@ -18,6 +27,7 @@ from app.routers import (
 app = FastAPI(
     title="Salon Management API",
     version="1.0.0",
+    lifespan=lifespan,
     #description="Salon Management backend - Phase 6: agent and salon dashboards.",
 )
 

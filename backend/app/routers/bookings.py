@@ -18,6 +18,7 @@ from app.models.user import User
 from app.schemas.booking import BookingCreateRequest, BookingItemResponse, BookingResponse
 from app.services.wallet import debit_wallet_for_booking, refund_booking
 from app.services.referral import complete_referral_for_booking
+from app.services.notifications import create_notification, send_push_notification
 
 router = APIRouter(prefix="/api/v1/bookings", tags=["Bookings"])
 
@@ -124,8 +125,27 @@ async def create_booking(
     await debit_wallet_for_booking(db, current_user.id, booking)
     booking.status = "CONFIRMED"
 
+    notification = await create_notification(
+        db=db,
+        user_id=current_user.id,
+        booking_id=booking.id,
+        notification_type="BOOKING_CONFIRMED",
+        title="Appointment Confirmed",
+        message=(
+            f"Your appointment at {salon.name} is confirmed for "
+            f"{booking.booking_date.isoformat()} at {booking.start_time.strftime('%I:%M %p').lstrip('0')}."
+        ),
+        data={
+            "screen": "booking",
+            "booking_id": booking.id,
+            "salon_id": booking.salon_id,
+        },
+    )
+
     await db.commit()
     await db.refresh(booking)
+    # Push is intentionally sent after the booking transaction commits.
+    await send_push_notification(db, notification)
     return await response_for_booking(booking, db)
 
 @router.get("", response_model=list[BookingResponse])
