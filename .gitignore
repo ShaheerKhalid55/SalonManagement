@@ -9,4 +9,6 @@ __pycache__/
 .idea/
 alembic/versions/*.py
 frontend/node_modules/
-.expo/
+frontend/.expo/
+frontend/android/
+frontend/ios/
