@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -107,6 +108,10 @@ export default function CompareScreen() {
   const [loading, setLoading] = useState(true);
   const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
   const [open, setOpen] = useState<Record<Section, boolean>>({ overview: true, services: true, bundles: true });
+  const { width } = useWindowDimensions();
+  const compact = width < 390;
+  const contentWidth = Math.max(0, width - 48);
+  const comparisonTableWidth = contentWidth;
 
   useEffect(() => {
     if (salonIds.length !== 2) {
@@ -251,7 +256,16 @@ export default function CompareScreen() {
         </View>
         <Ionicons name={open[key] ? "chevron-up" : "chevron-down"} size={20} color={colors.ink} />
       </Pressable>
-      {open[key] ? content : null}
+      {open[key] ? (
+        <ScrollView
+          horizontal
+          nestedScrollEnabled
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalTableContent}
+        >
+          <View style={[styles.tableWidth, { width: comparisonTableWidth }]}>{content}</View>
+        </ScrollView>
+      ) : null}
     </View>
   );
 
@@ -280,11 +294,15 @@ export default function CompareScreen() {
           </View>
         </View>
 
-        <View style={styles.salonPair}>
+        <ScrollView
+          horizontal={compact}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.salonPair, compact && styles.salonPairCompact]}
+        >
           {data.map((item, index) => {
             const imageFailed = imageErrors[item.salon.id];
             return (
-              <Pressable key={item.salon.id} onPress={() => goToSalon(item.salon.id)} style={styles.salonCard}>
+              <Pressable key={item.salon.id} onPress={() => goToSalon(item.salon.id)} style={[styles.salonCard, compact && styles.salonCardCompact]}>
                 <View style={styles.salonImageWrap}>
                   {imageFailed ? (
                     <View style={styles.imageFallback}>
@@ -322,7 +340,7 @@ export default function CompareScreen() {
               </Pressable>
             );
           })}
-        </View>
+        </ScrollView>
 
         {renderSection(
           "overview",
@@ -350,7 +368,9 @@ export default function CompareScreen() {
               const startPrice = item.services.length ? Math.min(...item.services.map((service) => number(service.price))) : 0;
               return (
                 <View key={item.salon.id} style={[styles.overviewColumn, index === 0 && styles.overviewWinnerColumn]}>
-                  <View style={styles.overviewBadgeSpacer} />
+                  <View style={styles.overviewSalonHeader}>
+                    <AppText style={styles.overviewSalonName} numberOfLines={2}>{item.salon.name}</AppText>
+                  </View>
                   <AppText style={styles.overviewValue}>{item.salon.is_active ? "Active" : "Unavailable"}</AppText>
                   <AppText style={styles.overviewValue} numberOfLines={2}>{item.salon.city || item.salon.address_line1 || "Not provided"}</AppText>
                   <AppText style={styles.overviewValue}>{item.salon.opening_time} – {item.salon.closing_time}</AppText>
@@ -490,6 +510,8 @@ export default function CompareScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingTop: 8, paddingBottom: 28 },
+  horizontalTableContent: { paddingBottom: 1 },
+  tableWidth: { alignSelf: "flex-start" },
   backButton: { width: 42, height: 42, borderRadius: 15, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   navbar: { flexDirection: "row", alignItems: "center", marginBottom: 14 },
   navIcon: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
@@ -500,7 +522,9 @@ const styles = StyleSheet.create({
   navActionIcon: { width: 35, height: 35, alignItems: "center", justifyContent: "center" },
 
   salonPair: { flexDirection: "row", gap: 10, marginBottom: 14 },
-  salonCard: { flex: 1, overflow: "hidden", backgroundColor: colors.white, borderRadius: 18, borderWidth: 1, borderColor: colors.border, ...shadows.card },
+  salonPairCompact: { paddingRight: 2 },
+  salonCard: { flex: 1, minWidth: 0, overflow: "hidden", backgroundColor: colors.white, borderRadius: 18, borderWidth: 1, borderColor: colors.border, ...shadows.card },
+  salonCardCompact: { width: 150, flex: 0 },
   salonImageWrap: { height: 126, position: "relative", backgroundColor: colors.ivoryDeep },
   salonImage: { width: "100%", height: "100%" },
   imageFallback: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.ivoryDeep },
@@ -527,15 +551,17 @@ const styles = StyleSheet.create({
   sectionSubtitle: { color: colors.muted, fontSize: 8, marginTop: 3 },
 
   overviewBox: { borderTopWidth: 1, borderTopColor: colors.border, flexDirection: "row", padding: 8 },
-  overviewLabels: { width: 112 },
+  overviewLabels: { width: 88 },
   overviewHeaderSpacer: { height: 38 },
   overviewLabelRow: { height: 36, flexDirection: "row", alignItems: "center", gap: 7 },
   overviewLabel: { color: colors.ink, fontSize: 9, fontWeight: "600" },
-  overviewColumn: { flex: 1, borderLeftWidth: 1, borderLeftColor: colors.border, alignItems: "center", paddingHorizontal: 6 },
+  overviewColumn: { flex: 1, minWidth: 0, borderLeftWidth: 1, borderLeftColor: colors.border, alignItems: "center", paddingHorizontal: 3 },
   overviewWinnerColumn: { backgroundColor: "#F8F2FB", borderRadius: 13 },
   betterRatedBadge: { height: 28, flexDirection: "row", alignItems: "center", gap: 4 },
   betterRatedText: { color: colors.plum, fontSize: 8, fontWeight: "800" },
   overviewBadgeSpacer: { height: 28 },
+  overviewSalonHeader: { height: 38, width: "100%", alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
+  overviewSalonName: { color: colors.plum, fontSize: 8, fontWeight: "900", textAlign: "center" },
   overviewValue: { height: 36, width: "100%", textAlign: "center", textAlignVertical: "center", color: colors.ink, fontSize: 9, borderTopWidth: 1, borderTopColor: colors.border },
   priceRow: { height: 36, width: "100%", alignItems: "center", justifyContent: "center", borderTopWidth: 1, borderTopColor: colors.border, gap: 3 },
   overviewPrice: { color: colors.ink, fontSize: 10, fontWeight: "900" },
@@ -544,11 +570,11 @@ const styles = StyleSheet.create({
 
   sectionBody: { borderTopWidth: 1, borderTopColor: colors.border },
   compareRow: { flexDirection: "row", minHeight: 88, borderBottomWidth: 1, borderBottomColor: colors.border },
-  serviceInfo: { width: 116, padding: 9, flexDirection: "row", alignItems: "center" },
-  serviceIcon: { width: 36, height: 36, borderRadius: 11, backgroundColor: "#F6EDE8", alignItems: "center", justifyContent: "center" },
+  serviceInfo: { width: 88, padding: 6, flexDirection: "row", alignItems: "center", minWidth: 0 },
+  serviceIcon: { width: 30, height: 30, borderRadius: 11, backgroundColor: "#F6EDE8", alignItems: "center", justifyContent: "center" },
   bundleIcon: { width: 36, height: 36, borderRadius: 11, backgroundColor: "#F2EAF5", alignItems: "center", justifyContent: "center" },
   serviceCopy: { flex: 1, paddingLeft: 7 },
-  serviceName: { color: colors.ink, fontSize: 9, fontWeight: "900" },
+  serviceName: { color: colors.ink, fontSize: 8, fontWeight: "900" },
   serviceDescription: { color: colors.muted, fontSize: 7, lineHeight: 10, marginTop: 3 },
   valueCell: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 5, borderLeftWidth: 1, borderLeftColor: colors.border },
   valueCellBest: { backgroundColor: "#F8F3FA" },

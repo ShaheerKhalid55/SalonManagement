@@ -84,9 +84,32 @@ export interface Booking {
   items: BookingItem[];
 }
 
-export async function getSalons() {
-  const { data } = await api.get<Salon[]>("/salons");
+export interface SalonPage {
+  items: Salon[];
+  page: number;
+  page_size: number;
+  total: number;
+  has_more: boolean;
+}
+
+export interface ServicePage {
+  items: Service[];
+  page: number;
+  page_size: number;
+  total: number;
+  has_more: boolean;
+}
+
+export async function getSalonsPage(page = 1, pageSize = 10) {
+  const { data } = await api.get<SalonPage>("/salons", {
+    params: { page, page_size: pageSize },
+  });
   return data;
+}
+
+export async function getSalons() {
+  const data = await getSalonsPage(1, 10);
+  return data.items;
 }
 
 export async function getSalon(salonId: number) {
@@ -94,11 +117,20 @@ export async function getSalon(salonId: number) {
   return data;
 }
 
-export async function getServices(salonId?: number) {
-  const { data } = await api.get<Service[]>("/services", {
-    params: salonId ? { salon_id: salonId } : undefined,
-  });
+export async function getServicesPage(salonId?: number, page = 1, pageSize = 10, category?: string) {
+  const params: Record<string, string | number> = { page, page_size: pageSize };
+  if (salonId) params.salon_id = salonId;
+  if (category && category !== "All") params.category = category;
+  const { data } = await api.get<ServicePage>("/services", { params });
   return data;
+}
+
+export async function getServices(salonId?: number) {
+  // Preserve the existing full-list API for comparison and booking flows.
+  const { data } = await api.get<Service[]>("/services", {
+    params: salonId ? { salon_id: salonId, page: 1, page_size: 50 } : { page: 1, page_size: 50 },
+  });
+  return data.items;
 }
 
 export async function getBundles(salonId?: number) {

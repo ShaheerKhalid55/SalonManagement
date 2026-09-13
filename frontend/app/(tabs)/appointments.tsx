@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "@/components/Screen";
 import { AppButton } from "@/components/AppButton";
-import { Booking, getMyBookings } from "@/services/bookings";
+import { Booking, getMyBookingsPage } from "@/services/bookings";
 import { getApiErrorMessage } from "@/lib/api";
 import { colors, radius, shadows } from "@/constants/theme";
 import { AppText, AppTextInput } from "@/components/Typography";
@@ -23,19 +23,32 @@ const isUpcoming = (status: string) => ["PENDING", "CONFIRMED", "IN_PROGRESS"].i
 export default function AppointmentsScreen() {
   const [items, setItems] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("UPCOMING");
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilter>("ALL");
   const [filterOpen, setFilterOpen] = useState(false);
 
-  const load = useCallback(async () => {
-    try { setItems(await getMyBookings()); }
-    catch (e) { Alert.alert("Appointments", getApiErrorMessage(e)); }
-    finally { setLoading(false); setRefreshing(false); }
+  const loadPage = useCallback(async (nextPage: number, replace = false) => {
+    try {
+      if (nextPage === 1 && !replace) setLoading(true);
+      if (nextPage > 1) setLoadingMore(true);
+      const result = await getMyBookingsPage(nextPage, 10);
+      setItems(current => replace || nextPage === 1 ? result.items : [...current, ...result.items]);
+      setPage(result.page);
+      setHasMore(result.has_more);
+    } catch (e) { Alert.alert("Appointments", getApiErrorMessage(e)); }
+    finally { setLoading(false); setLoadingMore(false); setRefreshing(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadPage(1); }, [loadPage]);
+
+  const loadMore = () => {
+    if (!loading && !loadingMore && hasMore) loadPage(page + 1);
+  };
 
   const tabItems = useMemo(() => ({
     UPCOMING: items.filter(b => isUpcoming(b.status)),
@@ -75,7 +88,12 @@ export default function AppointmentsScreen() {
     <ScrollView
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.plum} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadPage(1, true); }} tintColor={colors.plum} />}
+      onScroll={({ nativeEvent }) => {
+        const nearBottom = nativeEvent.layoutMeasurement.height + nativeEvent.contentOffset.y >= nativeEvent.contentSize.height - 500;
+        if (nearBottom) loadMore();
+      }}
+      scrollEventThrottle={200}
     >
       <View style={styles.headerRow}>
         <View style={{ flex: 1 }}>
@@ -118,6 +136,8 @@ export default function AppointmentsScreen() {
       {loading ? <View style={styles.state}><Ionicons name="time-outline" size={24} color={colors.champagne} /><AppText style={styles.hint}>Loading appointments...</AppText></View> : filteredItems.length === 0 ? (
         <EmptyState tab={activeTab} searching={search.length > 0} clearSearch={() => setSearch("")} />
       ) : filteredItems.map(b => <AppointmentCard key={b.id} booking={b} />)}
+      {loadingMore && <View style={styles.loadMore}><Ionicons name="sync-outline" size={18} color={colors.plum} /><AppText style={styles.hint}>Loading more appointments...</AppText></View>}
+      {!loading && !hasMore && items.length > 0 && <AppText style={styles.endText}>You have reached the end of your appointments.</AppText>}
     </ScrollView>
     <Modal visible={filterOpen} transparent animationType="slide" onRequestClose={() => setFilterOpen(false)}>
       <Pressable style={styles.modalBackdrop} onPress={() => setFilterOpen(false)}>
@@ -224,6 +244,8 @@ const styles = StyleSheet.create({
   resultTitle: { color: colors.ink, fontSize: 16, fontWeight: "900" },
   resultCount: { color: colors.muted, fontSize: 11, fontWeight: "700" },
   state: { backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, minHeight: 130, alignItems: "center", justifyContent: "center", gap: 8 },
+  loadMore: { alignItems: "center", justifyContent: "center", gap: 7, paddingVertical: 18 },
+  endText: { color: colors.muted, fontSize: 10, textAlign: "center", paddingVertical: 10 },
   hint: { color: colors.muted, fontSize: 13, lineHeight: 19, textAlign: "center" },
   card: { backgroundColor: colors.white, borderRadius: radius.lg, padding: 17, marginBottom: 12, borderWidth: 1, borderColor: colors.border, ...shadows.card },
   cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },

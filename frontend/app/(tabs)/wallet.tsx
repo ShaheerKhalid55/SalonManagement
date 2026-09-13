@@ -1,98 +1,244 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, Pressable } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, RefreshControl, ScrollView, StyleSheet, TextInput, View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { Screen } from "@/components/Screen";
-import { AppButton } from "@/components/AppButton";
 import { getApiErrorMessage } from "@/lib/api";
 import { colors, radius, shadows } from "@/constants/theme";
-import { getWallet, getWalletTransactions, topUpWallet, Wallet, WalletTransaction } from "@/services/wallet";
-import { AppText, AppTextInput } from "@/components/Typography";
+import { getWalletTransactions, WalletTransaction } from "@/services/wallet";
+import { AppText } from "@/components/Typography";
 
-const money = (v: unknown) => `PKR ${Number(v ?? 0).toLocaleString("en-PK", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+const money = (v: unknown) =>
+  `PKR ${Number(v ?? 0).toLocaleString("en-PK", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}`;
 
 export default function WalletScreen() {
-  const [wallet, setWallet] = useState<Wallet | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
-  const [amount, setAmount] = useState("");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [adding, setAdding] = useState(false);
 
   const load = useCallback(async () => {
-    try { const [w, tx] = await Promise.all([getWallet(), getWalletTransactions()]); setWallet(w); setTransactions(tx); }
-    catch (e) { Alert.alert("Wallet", getApiErrorMessage(e)); }
-    finally { setLoading(false); setRefreshing(false); }
+    try {
+      const tx = await getWalletTransactions();
+      setTransactions(tx);
+    } catch (e) {
+      Alert.alert("Transaction history", getApiErrorMessage(e));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
-  useEffect(() => { load(); }, [load]);
 
-  async function addMoney() {
-    const value = Number(amount);
-    if (!Number.isFinite(value) || value <= 0) { Alert.alert("Invalid amount", "Enter an amount greater than zero."); return; }
-    try { setAdding(true); await topUpWallet(value); setAmount(""); await load(); Alert.alert("Success", `${money(value)} was added to your wallet.`); }
-    catch (e) { Alert.alert("Top-up failed", getApiErrorMessage(e)); }
-    finally { setAdding(false); }
-  }
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  return <Screen>
-    <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.plum} />}>
-      <AppText style={styles.kicker}>YOUR MONEY</AppText>
-      <AppText style={styles.title}>My wallet</AppText>
-      <AppText style={styles.subtitle}>A simple way to pay for your salon visits.</AppText>
+  const filteredTransactions = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return transactions;
 
-      <View style={styles.balance}>
-        <View style={styles.balanceTop}><AppText style={styles.label}>CURRENT BALANCE</AppText><Ionicons name="wallet-outline" size={29} color={colors.champagne} /></View>
-        <AppText style={styles.amount}>{loading ? "Loading..." : money(wallet?.balance)}</AppText>
-        <AppButton title="＋ Add money" variant="secondary" onPress={() => setAmount("1000")} style={styles.addButton} />
+    return transactions.filter((tx) => {
+      const values = [
+        tx.description,
+        tx.transaction_type,
+        tx.transaction_reference,
+        tx.status,
+        tx.booking_id?.toString(),
+        tx.amount?.toString(),
+      ];
+      return values.some((value) => String(value ?? "").toLowerCase().includes(query));
+    });
+  }, [transactions, search]);
+
+  return (
+    <Screen>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={21} color={colors.ink} />
+          </Pressable>
+          <View style={styles.headerText}>
+            <AppText style={styles.title}>Transaction history</AppText>
+            <AppText style={styles.subtitle}>Your recent wallet activity</AppText>
+          </View>
+        </View>
+
+        <View style={styles.searchWrap}>
+          <Ionicons name="search-outline" size={19} color={colors.muted} />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search transactions"
+            placeholderTextColor={colors.muted}
+            style={styles.searchInput}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch("")} hitSlop={8}>
+              <Ionicons name="close-circle" size={18} color={colors.muted} />
+            </Pressable>
+          )}
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                load();
+              }}
+              tintColor={colors.plum}
+            />
+          }
+        >
+          {loading ? (
+            <View style={styles.empty}>
+              <AppText style={styles.emptyTitle}>Loading transactions...</AppText>
+            </View>
+          ) : filteredTransactions.length === 0 ? (
+            <View style={styles.empty}>
+              <Ionicons name="receipt-outline" size={26} color={colors.plum} />
+              <AppText style={styles.emptyTitle}>
+                {search.trim() ? "No matching transactions" : "No transactions yet"}
+              </AppText>
+              <AppText style={styles.emptyHint}>
+                {search.trim()
+                  ? "Try a different search term."
+                  : "Wallet activity will appear here."}
+              </AppText>
+            </View>
+          ) : (
+            filteredTransactions.map((tx) => {
+              const positive = Number(tx.amount) >= 0;
+              return (
+                <View key={tx.id} style={styles.transaction}>
+                  <View
+                    style={[
+                      styles.txIcon,
+                      { backgroundColor: positive ? "#EAF5EF" : "#FBEDEC" },
+                    ]}
+                  >
+                    <Ionicons
+                      name={positive ? "arrow-down-outline" : "arrow-up-outline"}
+                      size={18}
+                      color={positive ? colors.success : colors.danger}
+                    />
+                  </View>
+                  <View style={styles.txContent}>
+                    <AppText style={styles.txTitle} numberOfLines={2}>
+                      {tx.description || tx.transaction_type}
+                    </AppText>
+                    <AppText style={styles.txMeta}>
+                      {new Date(tx.created_at).toLocaleDateString("en-PK", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </AppText>
+                  </View>
+                  <AppText style={[styles.txAmount, positive ? styles.credit : styles.debit]}>
+                    {positive ? "+" : "-"}
+                    {money(Math.abs(Number(tx.amount)))}
+                  </AppText>
+                </View>
+              );
+            })
+          )}
+        </ScrollView>
       </View>
-
-      <View style={styles.card}>
-        <View style={styles.cardHeader}><View><AppText style={styles.sectionTitle}>Add money</AppText><AppText style={styles.hint}>Top up your wallet before your next visit.</AppText></View><View style={styles.cardIcon}><Ionicons name="add" size={19} color={colors.plum} /></View></View>
-        <AppTextInput value={amount} onChangeText={setAmount} placeholder="Enter amount" keyboardType="decimal-pad" placeholderTextColor={colors.muted} style={styles.input} />
-        <View style={styles.quickRow}>{[500, 1000, 2000].map(v => <Pressable key={v} onPress={() => setAmount(String(v))} style={styles.quick}><AppText style={styles.quickText}>PKR {v.toLocaleString()}</AppText></Pressable>)}</View>
-        <AppButton title={adding ? "Adding..." : "Add money"} onPress={addMoney} disabled={adding} style={{ marginTop: 3 }} />
-      </View>
-
-      <View style={styles.sectionHeader}><View><AppText style={styles.sectionTitle}>Transaction history</AppText><AppText style={styles.hint}>Your recent wallet activity</AppText></View><AppText style={styles.viewAll}>Recent</AppText></View>
-      {transactions.length === 0 ? <View style={styles.empty}><Ionicons name="receipt-outline" size={25} color={colors.plum} /><AppText style={styles.emptyTitle}>No transactions yet</AppText><AppText style={styles.hint}>Wallet activity will appear here.</AppText></View> : transactions.map(tx => {
-        const positive = Number(tx.amount) >= 0;
-        return <View key={tx.id} style={styles.transaction}>
-          <View style={[styles.txIcon, { backgroundColor: positive ? "#EAF5EF" : "#FBEDEC" }]}><Ionicons name={positive ? "arrow-down-outline" : "arrow-up-outline"} size={18} color={positive ? colors.success : colors.danger} /></View>
-          <View style={{ flex: 1 }}><AppText style={styles.txTitle}>{tx.description || tx.transaction_type}</AppText><AppText style={styles.txMeta}>{new Date(tx.created_at).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" })}</AppText></View>
-          <AppText style={[styles.txAmount, positive ? styles.credit : styles.debit]}>{positive ? "+" : "-"}{money(Math.abs(Number(tx.amount)))}</AppText>
-        </View>;
-      })}
-    </ScrollView>
-  </Screen>;
+    </Screen>
+  );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingVertical: 22, paddingBottom: 50 },
-  kicker: { color: colors.champagne, fontSize: 10, fontWeight: "900", letterSpacing: 1.3 },
-  title: { color: colors.ink, fontSize: 29, fontWeight: "900", marginTop: 4 },
-  subtitle: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 5, marginBottom: 19 },
-  balance: { backgroundColor: colors.plum, borderRadius: radius.xl, padding: 21, marginBottom: 16, overflow: "hidden", ...shadows.card },
-  balanceTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  label: { color: "#D8CADC", fontSize: 9, fontWeight: "900", letterSpacing: 1 },
-  amount: { color: colors.white, fontSize: 31, fontWeight: "900", marginTop: 8, marginBottom: 13 },
-  addButton: { alignSelf: "flex-start" },
-  card: { backgroundColor: colors.white, borderRadius: radius.lg, padding: 17, borderWidth: 1, borderColor: colors.border, marginBottom: 24, ...shadows.card },
-  cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  cardIcon: { width: 38, height: 38, borderRadius: 13, backgroundColor: colors.ivoryDeep, alignItems: "center", justifyContent: "center" },
-  sectionTitle: { color: colors.ink, fontSize: 17, fontWeight: "900" },
-  hint: { color: colors.muted, fontSize: 10, lineHeight: 16, marginTop: 2 },
-  input: { height: 50, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: 14, marginTop: 13, fontSize: 14, color: colors.ink },
-  quickRow: { flexDirection: "row", gap: 8, marginVertical: 10 },
-  quick: { flex: 1, minHeight: 40, borderRadius: 12, backgroundColor: colors.ivoryDeep, alignItems: "center", justifyContent: "center" },
-  quickText: { color: colors.plum, fontSize: 10, fontWeight: "900" },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  viewAll: { color: colors.champagne, fontSize: 10, fontWeight: "900" },
-  empty: { backgroundColor: colors.white, borderRadius: radius.lg, padding: 22, borderWidth: 1, borderColor: colors.border, alignItems: "center" },
+  container: { flex: 1 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 8,
+    paddingBottom: 14,
+  },
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+    ...shadows.card,
+  },
+  headerText: { flex: 1, minWidth: 0 },
+  title: { color: colors.ink, fontSize: 21, fontWeight: "900" },
+  subtitle: { color: colors.muted, fontSize: 11, marginTop: 3 },
+  searchWrap: {
+    height: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+  },
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
+    height: 46,
+    marginLeft: 9,
+    color: colors.ink,
+    fontSize: 13,
+  },
+  content: { paddingBottom: 30 },
+  empty: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    padding: 28,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    marginTop: 4,
+  },
   emptyTitle: { fontWeight: "900", fontSize: 15, color: colors.ink, marginTop: 8 },
-  transaction: { backgroundColor: colors.white, borderRadius: radius.md, padding: 13, marginBottom: 8, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: colors.border },
-  txIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center", marginRight: 10 },
+  emptyHint: { color: colors.muted, fontSize: 11, marginTop: 5, textAlign: "center" },
+  transaction: {
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    padding: 13,
+    marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  txIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  txContent: { flex: 1, minWidth: 0, paddingRight: 8 },
   txTitle: { color: colors.ink, fontWeight: "800", fontSize: 12 },
   txMeta: { color: colors.muted, fontSize: 9, marginTop: 4 },
-  txAmount: { fontWeight: "900", fontSize: 11 },
+  txAmount: { fontWeight: "900", fontSize: 11, flexShrink: 0 },
   credit: { color: colors.success },
   debit: { color: colors.danger },
 });

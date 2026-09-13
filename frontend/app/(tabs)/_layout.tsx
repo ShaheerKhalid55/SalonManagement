@@ -44,7 +44,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="home" options={{ title: "Home", tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} /> }} />
       <Tabs.Screen name="appointments" options={{ title: "Bookings", tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} /> }} />
-      <Tabs.Screen name="wallet" options={{ title: "Wallet", tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} /> }} />
+      <Tabs.Screen name="wallet" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="services" options={{ title: "Services", tabBarIcon: ({ color, size }) => <Ionicons name="cut-outline" size={size} color={color} /> }} />
       <Tabs.Screen name="profile" options={{ title: "Account", tabBarIcon: ({ size }) => <View style={{ width: size, height: size, borderRadius: 12, backgroundColor: colors.plum, alignItems: "center", justifyContent: "center" }}><AppText style={{ color: colors.champagneLight, fontSize: 16, fontWeight: "900" }}>S</AppText></View> }} />
       <Tabs.Screen name="referral" options={{ href: null }} />

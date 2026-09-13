@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "@/components/Screen";
-import { getSalons, Salon } from "@/services/catalog";
+import { getSalonsPage, Salon } from "@/services/catalog";
 import { getApiErrorMessage } from "@/lib/api";
 import { colors, radius, shadows } from "@/constants/theme";
 import { AppText, AppTextInput } from "@/components/Typography";
@@ -18,20 +18,36 @@ export default function ServicesScreen() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All Salons");
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [selectedSalonIds, setSelectedSalonIds] = useState<number[]>([]);
+  const { width } = useWindowDimensions();
+  const compact = width < 390;
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        setSalons(await getSalons());
-      } catch (e) {
-        Alert.alert("Services", getApiErrorMessage(e));
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const loadPage = useCallback(async (nextPage: number, replace = false) => {
+    try {
+      if (nextPage === 1 && !replace) setLoading(true);
+      if (nextPage > 1) setLoadingMore(true);
+      const result = await getSalonsPage(nextPage, 10);
+      setSalons(current => replace || nextPage === 1 ? result.items : [...current, ...result.items]);
+      setPage(result.page);
+      setHasMore(result.has_more);
+    } catch (e) {
+      Alert.alert("Services", getApiErrorMessage(e));
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+      setRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => { loadPage(1); }, [loadPage]);
+
+  const loadMore = () => {
+    if (!loading && !loadingMore && hasMore) loadPage(page + 1);
+  };
 
   const toggleCompare = (salonId: number) => {
     setSelectedSalonIds((current) => current.includes(salonId) ? current.filter((id) => id !== salonId) : current.length < 2 ? [...current, salonId] : current);
@@ -50,7 +66,16 @@ export default function ServicesScreen() {
   return (
     <Screen>
       <View style={styles.screen}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+          onScroll={({ nativeEvent }) => {
+            const nearBottom = nativeEvent.layoutMeasurement.height + nativeEvent.contentOffset.y >= nativeEvent.contentSize.height - 500;
+            if (nearBottom) loadMore();
+          }}
+          scrollEventThrottle={200}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadPage(1, true); }} tintColor={colors.plum} />}
+        >
           <View style={styles.headerRow}>
             <View style={styles.headerCopy}>
               {/* <AppText style={styles.kicker}>THE SALON MENU</AppText> */}
@@ -107,40 +132,70 @@ export default function ServicesScreen() {
           ) : (
             <View style={styles.list}>
               {filtered.map((salon, index) => (
-                <View key={salon.id} style={[styles.salonCard, selectedSalonIds.includes(salon.id) && styles.salonCardSelected]}>
-                  <Pressable onPress={() => router.push(`/salon/${salon.id}`)} style={({ pressed }) => [styles.salonMain, pressed && styles.pressed]}>
-                  <View style={styles.salonVisual}>
-                    <Ionicons name={salonIcon(index)} size={32} color={colors.plum} />
-                    <View style={styles.openBadge}>
-                      <View style={styles.openDot} />
-                      <AppText style={styles.openText}>Open</AppText>
+                <View key={salon.id} style={[styles.salonCard, compact && styles.salonCardCompact, selectedSalonIds.includes(salon.id) && styles.salonCardSelected]}>
+                  <View style={styles.salonMain}>
+                    <View style={styles.salonVisual}>
+                      <Ionicons name={salonIcon(index)} size={32} color={colors.plum} />
+                      <View style={styles.openBadge}>
+                        <View style={styles.openDot} />
+                        <AppText style={styles.openText}>Open</AppText>
+                      </View>
+                    </View>
+                    <View style={styles.salonBody}>
+                      <View style={styles.nameRow}>
+                        <AppText style={styles.salonName} numberOfLines={2}>{salon.name}</AppText>
+                        <View style={styles.rating}><Ionicons name="star" size={12} color={colors.champagne} /><AppText style={styles.ratingText}>4.8</AppText></View>
+                      </View>
+                      <View style={styles.locationRow}>
+                        <Ionicons name="location-outline" size={14} color={colors.muted} />
+                        <AppText style={styles.location} numberOfLines={1}>{salon.city || salon.address_line1 || "Location available"}</AppText>
+                      </View>
+                      <AppText style={styles.categories} numberOfLines={1}>Hair  ·  Skin  ·  Nails  ·  Makeup</AppText>
+                      <View style={styles.cardFooter}>
+                        <View style={styles.tag}><AppText style={styles.tagText}>Popular</AppText></View>
+                        <Ionicons name="arrow-forward" size={17} color={colors.plum} />
+                      </View>
                     </View>
                   </View>
-                  <View style={styles.salonBody}>
-                    <View style={styles.nameRow}>
-                      <AppText style={styles.salonName} numberOfLines={2}>{salon.name}</AppText>
-                      <View style={styles.rating}><Ionicons name="star" size={12} color={colors.champagne} /><AppText style={styles.ratingText}>4.8</AppText></View>
-                    </View>
-                    <View style={styles.locationRow}>
-                      <Ionicons name="location-outline" size={14} color={colors.muted} />
-                      <AppText style={styles.location} numberOfLines={1}>{salon.city || salon.address_line1 || "Location available"}</AppText>
-                    </View>
-                    <AppText style={styles.categories} numberOfLines={1}>Hair  ·  Skin  ·  Nails  ·  Makeup</AppText>
-                    <View style={styles.cardFooter}>
-                      <View style={styles.tag}><AppText style={styles.tagText}>Popular</AppText></View>
-                      {/* <AppText style={styles.viewText}>View services</AppText> */}
-                      <Ionicons name="arrow-forward" size={17} color={colors.plum} />
-                    </View>
+
+                  <View style={styles.actionRow}>
+                    <Pressable
+                      onPress={() => router.push(`/salon/${salon.id}`)}
+                      style={({ pressed }) => [styles.actionButton, styles.viewDetailButton, pressed && styles.pressed]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`View details for ${salon.name}`}
+                    >
+                      <AppText style={[styles.actionButtonText, styles.viewDetailButtonText]}>View Detail</AppText>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() => toggleCompare(salon.id)}
+                      style={({ pressed }) => [
+                        styles.actionButton,
+                        styles.compareButton,
+                        selectedSalonIds.includes(salon.id) && styles.compareButtonActive,
+                        pressed && styles.pressed,
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${selectedSalonIds.includes(salon.id) ? "Remove" : "Add"} ${salon.name} ${selectedSalonIds.includes(salon.id) ? "from" : "to"} comparison`}
+                    >
+                      <Ionicons
+                        name={selectedSalonIds.includes(salon.id) ? "checkmark-circle" : "git-compare-outline"}
+                        size={14}
+                        color={selectedSalonIds.includes(salon.id) ? colors.white : colors.plum}
+                      />
+                      <AppText style={[styles.actionButtonText, selectedSalonIds.includes(salon.id) && styles.compareButtonTextActive]}>
+                        Compare
+                      </AppText>
+                    </Pressable>
                   </View>
-                  </Pressable>
-                  <Pressable onPress={() => toggleCompare(salon.id)} style={[styles.compareButton, selectedSalonIds.includes(salon.id) && styles.compareButtonActive]}>
-                    <Ionicons name={selectedSalonIds.includes(salon.id) ? "checkmark-circle" : "git-compare-outline"} size={15} color={selectedSalonIds.includes(salon.id) ? colors.white : colors.plum} />
-                    <AppText style={[styles.compareButtonText, selectedSalonIds.includes(salon.id) && styles.compareButtonTextActive]}>Compare</AppText>
-                  </Pressable>
                 </View>
               ))}
             </View>
           )}
+
+          {loadingMore && <View style={styles.loadMore}><ActivityIndicator color={colors.plum} /><AppText style={styles.loadingText}>Loading more salons...</AppText></View>}
+          {!loading && !hasMore && salons.length > 0 && <AppText style={styles.endText}>You have reached the end of the salon list.</AppText>}
 
           {selectedSalonIds.length > 0 ? (
             <View style={styles.compareBar}>
@@ -183,10 +238,15 @@ const styles = StyleSheet.create({
   salonCard: { backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: 10, ...shadows.card },
   salonCardSelected: { borderColor: colors.plum, borderWidth: 1.5 },
   salonMain: { flexDirection: "row" },
+  salonMainCompact: { flexDirection: "column" },
   pressed: { opacity: 0.88, transform: [{ scale: 0.995 }] },
-  compareButton: { height: 34, borderRadius: 11, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.ivoryDeep, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8 },
+  actionRow: { flexDirection: "row", gap: 8, marginTop: 10 },
+  actionButton: { flex: 1, minWidth: 0, height: 36, borderRadius: 11, borderWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingHorizontal: 8 },
+  viewDetailButton: { backgroundColor: colors.plum, borderColor: colors.plum },
+  viewDetailButtonText: { color: colors.white, fontSize: 9, fontWeight: "900" },
+  actionButtonText: { color: colors.plum, fontSize: 9, fontWeight: "900" },
+  compareButton: { backgroundColor: colors.ivoryDeep, borderColor: colors.border },
   compareButtonActive: { backgroundColor: colors.plum, borderColor: colors.plum },
-  compareButtonText: { color: colors.plum, fontSize: 9, fontWeight: "900" },
   compareButtonTextActive: { color: colors.white },
   compareBar: { backgroundColor: colors.white, borderRadius: 18, borderWidth: 1, borderColor: colors.plum, padding: 10, flexDirection: "row", alignItems: "center", marginTop: 14, marginBottom: 12, ...shadows.card },
   compareBarIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: colors.ivoryDeep, alignItems: "center", justifyContent: "center" },
@@ -200,7 +260,8 @@ const styles = StyleSheet.create({
   openBadge: { position: "absolute", left: 8, bottom: 8, backgroundColor: "#EEF8F1", borderRadius: 9, paddingHorizontal: 8, paddingVertical: 5, flexDirection: "row", alignItems: "center", gap: 4 },
   openDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
   openText: { color: colors.success, fontSize: 9, fontWeight: "800" },
-  salonBody: { flex: 1, paddingLeft: 12, paddingVertical: 4 },
+  salonBody: { flex: 1, minWidth: 0, paddingLeft: 12, paddingVertical: 4 },
+  salonCardCompact: { padding: 10 },
   nameRow: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
   salonName: { flex: 1, color: colors.ink, fontSize: 15, lineHeight: 19, fontWeight: "900" },
   rating: { backgroundColor: "#FFF1D6", borderRadius: 9, paddingHorizontal: 7, paddingVertical: 5, flexDirection: "row", alignItems: "center", gap: 3 },
@@ -214,6 +275,8 @@ const styles = StyleSheet.create({
   viewText: { flex: 1, color: colors.plum, fontSize: 10, fontWeight: "800", textAlign: "right" },
   loading: { minHeight: 180, alignItems: "center", justifyContent: "center", gap: 9 },
   loadingText: { color: colors.muted, fontSize: 12 },
+  loadMore: { alignItems: "center", justifyContent: "center", gap: 7, paddingVertical: 18 },
+  endText: { color: colors.muted, fontSize: 10, textAlign: "center", paddingVertical: 10 },
   empty: { backgroundColor: colors.white, borderRadius: radius.lg, padding: 28, alignItems: "center", borderWidth: 1, borderColor: colors.border },
   emptyIcon: { width: 54, height: 54, borderRadius: 18, backgroundColor: colors.ivoryDeep, alignItems: "center", justifyContent: "center", marginBottom: 10 },
   emptyTitle: { color: colors.ink, fontSize: 16, fontWeight: "900" },

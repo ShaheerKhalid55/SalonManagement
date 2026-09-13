@@ -30,9 +30,25 @@ export interface Booking {
   items: BookingItem[];
 }
 
-export async function getMyBookings() {
-  const { data } = await api.get<Booking[]>("/bookings");
+export interface BookingPage {
+  items: Booking[];
+  page: number;
+  page_size: number;
+  total: number;
+  has_more: boolean;
+}
+
+export async function getMyBookingsPage(page = 1, pageSize = 10) {
+  const { data } = await api.get<BookingPage>("/bookings", {
+    params: { page, page_size: pageSize },
+  });
   return data;
+}
+
+// Used by compact dashboard views that only need the first page.
+export async function getMyBookings() {
+  const data = await getMyBookingsPage(1, 10);
+  return data.items;
 }
 
 export async function getBooking(id: number) {

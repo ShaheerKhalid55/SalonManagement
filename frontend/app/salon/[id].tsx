@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "@/components/Screen";
-import { Bundle, getBundles, getSalon, getServices, Salon, Service } from "@/services/catalog";
+import { Bundle, getBundles, getSalon, getServicesPage, Salon, Service } from "@/services/catalog";
 import { getApiErrorMessage } from "@/lib/api";
 import { colors, radius, shadows } from "@/constants/theme";
 import { AppText } from "@/components/Typography";
@@ -27,28 +27,51 @@ export default function SalonServicesScreen() {
   const [tab, setTab] = useState<"services" | "bundles">("services");
   const [category, setCategory] = useState("All");
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [servicesPage, setServicesPage] = useState(1);
+  const [servicesHasMore, setServicesHasMore] = useState(false);
   const [favorite, setFavorite] = useState(false);
+  const { width } = useWindowDimensions();
+  const compact = width < 390;
+
+  const loadServicesPage = useCallback(async (nextPage: number) => {
+    if (!salonId) return;
+    try {
+      if (nextPage > 1) setLoadingMore(true);
+      const result = await getServicesPage(salonId, nextPage, 10);
+      setServices(current => nextPage === 1 ? result.items : [...current, ...result.items]);
+      setServicesPage(result.page);
+      setServicesHasMore(result.has_more);
+    } catch (e) {
+      Alert.alert("Salon services", getApiErrorMessage(e));
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [salonId]);
 
   useEffect(() => {
     if (!salonId) return;
     (async () => {
       try {
         setLoading(true);
-        const [salonData, serviceData, bundleData] = await Promise.all([
+        const [salonData, bundleData] = await Promise.all([
           getSalon(salonId),
-          getServices(salonId),
           getBundles(salonId),
         ]);
         setSalon(salonData);
-        setServices(serviceData);
         setBundles(bundleData);
+        await loadServicesPage(1);
       } catch (e) {
         Alert.alert("Salon", getApiErrorMessage(e), [{ text: "Back", onPress: () => router.back() }]);
       } finally {
         setLoading(false);
       }
     })();
-  }, [salonId]);
+  }, [salonId, loadServicesPage]);
+
+  const loadMoreServices = () => {
+    if (tab === "services" && !loading && !loadingMore && servicesHasMore) loadServicesPage(servicesPage + 1);
+  };
 
   const categories = useMemo(() => ["All", ...Array.from(new Set(services.map((s) => s.category).filter(Boolean)))], [services]);
   const visibleServices = useMemo(() => services.filter((s) => category === "All" || s.category === category), [services, category]);
@@ -74,7 +97,15 @@ export default function SalonServicesScreen() {
   return (
     <Screen>
       <View style={styles.screen}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+          onScroll={({ nativeEvent }) => {
+            const nearBottom = nativeEvent.layoutMeasurement.height + nativeEvent.contentOffset.y >= nativeEvent.contentSize.height - 500;
+            if (nearBottom) loadMoreServices();
+          }}
+          scrollEventThrottle={200}
+        >
           <View style={styles.topBar}>
             <Pressable onPress={() => router.back()} style={styles.backButton}><Ionicons name="arrow-back" size={21} color={colors.ink} /></Pressable>
             <Pressable onPress={() => setFavorite((v) => !v)} style={styles.favoriteButton}>
@@ -82,8 +113,8 @@ export default function SalonServicesScreen() {
             </Pressable>
           </View>
 
-          <View style={styles.salonHero}>
-            <View style={styles.salonLogo}><Ionicons name="sparkles-outline" size={35} color={colors.plum} /></View>
+          <View style={[styles.salonHero, compact && styles.salonHeroCompact]}>
+            <View style={[styles.salonLogo, compact && styles.salonLogoCompact]}><Ionicons name="sparkles-outline" size={35} color={colors.plum} /></View>
             <View style={styles.heroCopy}>
               <AppText style={styles.salonName}>{salon.name}</AppText>
               <View style={styles.ratingRow}><Ionicons name="star" size={14} color={colors.champagne} /><AppText style={styles.ratingValue}>4.8</AppText><AppText style={styles.reviewText}>(230 reviews)</AppText></View>
@@ -113,7 +144,7 @@ export default function SalonServicesScreen() {
               </ScrollView>
               <View style={styles.serviceList}>
                 {visibleServices.map((service) => (
-                  <View key={service.id} style={styles.serviceCard}>
+                  <View key={service.id} style={[styles.serviceCard, compact && styles.serviceCardCompact]}>
                     <View style={styles.serviceIcon}><Ionicons name={iconFor(service.category)} size={24} color={colors.plum} /></View>
                     <View style={styles.serviceCopy}>
                       <AppText style={styles.serviceName} numberOfLines={2}>{service.name}</AppText>
@@ -121,15 +152,17 @@ export default function SalonServicesScreen() {
                       <View style={styles.metaRow}><Ionicons name="time-outline" size={13} color={colors.muted} /><AppText style={styles.metaText}>{service.duration_minutes} min</AppText><View style={styles.metaDot} /><AppText style={styles.metaText}>{service.category}</AppText></View>
                       <AppText style={styles.price}>{money(service.price)}</AppText>
                     </View>
-                    <Pressable onPress={() => bookService(service)} style={styles.bookButton}><AppText style={styles.bookText}>Book</AppText></Pressable>
+                    <Pressable onPress={() => bookService(service)} style={[styles.bookButton, compact && styles.bookButtonCompact]}><AppText style={styles.bookText}>Book</AppText></Pressable>
                   </View>
                 ))}
               </View>
+              {loadingMore && <View style={styles.loadMore}><ActivityIndicator color={colors.plum} /><AppText style={styles.loadingText}>Loading more services...</AppText></View>}
+              {!loading && !servicesHasMore && services.length > 0 && <AppText style={styles.endText}>You have reached the end of the service list.</AppText>}
             </>
           ) : (
             <>
               <View style={styles.sectionHeader}><View><AppText style={styles.sectionTitle}>Signature bundles</AppText><AppText style={styles.sectionSubtitle}>Curated services at a better value</AppText></View></View>
-              {bundles.length === 0 ? <View style={styles.empty}><Ionicons name="gift-outline" size={28} color={colors.plum} /><AppText style={styles.emptyTitle}>No bundles available</AppText><AppText style={styles.emptyText}>This salon currently offers individual services.</AppText></View> : <View style={styles.bundleList}>{bundles.map((bundle) => { const saved = Number(bundle.original_price) - Number(bundle.bundle_price); return <View key={bundle.id} style={styles.bundleCard}><View style={styles.bundleHeader}><View style={styles.bundleIcon}><Ionicons name="gift-outline" size={21} color={colors.champagne} /></View><View style={styles.bundleTitleCopy}><AppText style={styles.bundleName}>{bundle.name}</AppText><AppText style={styles.bundleDescription} numberOfLines={2}>{bundle.description || bundle.services.map((s) => s.name).join(" + ")}</AppText></View></View><View style={styles.bundleServices}>{bundle.services.slice(0, 4).map((s) => <View key={s.id} style={styles.miniTag}><AppText style={styles.miniTagText}>{s.name}</AppText></View>)}</View><View style={styles.bundleBottom}><View><View style={styles.bundlePriceRow}><AppText style={styles.bundlePrice}>{money(bundle.bundle_price)}</AppText><AppText style={styles.originalPrice}>{money(bundle.original_price)}</AppText></View><AppText style={styles.saveText}>Save {money(saved)} · {bundle.duration_minutes} min</AppText></View><Pressable onPress={() => bookBundle(bundle)} style={styles.bookButton}><AppText style={styles.bookText}>Book</AppText></Pressable></View></View>; })}</View>}
+              {bundles.length === 0 ? <View style={styles.empty}><Ionicons name="gift-outline" size={28} color={colors.plum} /><AppText style={styles.emptyTitle}>No bundles available</AppText><AppText style={styles.emptyText}>This salon currently offers individual services.</AppText></View> : <View style={styles.bundleList}>{bundles.map((bundle) => { const saved = Number(bundle.original_price) - Number(bundle.bundle_price); return <View key={bundle.id} style={styles.bundleCard}><View style={styles.bundleHeader}><View style={styles.bundleIcon}><Ionicons name="gift-outline" size={21} color={colors.champagne} /></View><View style={styles.bundleTitleCopy}><AppText style={styles.bundleName}>{bundle.name}</AppText><AppText style={styles.bundleDescription} numberOfLines={2}>{bundle.description || bundle.services.map((s) => s.name).join(" + ")}</AppText></View></View><View style={styles.bundleServices}>{bundle.services.slice(0, 4).map((s) => <View key={s.id} style={styles.miniTag}><AppText style={styles.miniTagText}>{s.name}</AppText></View>)}</View><View style={[styles.bundleBottom, compact && styles.bundleBottomCompact]}><View><View style={styles.bundlePriceRow}><AppText style={styles.bundlePrice}>{money(bundle.bundle_price)}</AppText><AppText style={styles.originalPrice}>{money(bundle.original_price)}</AppText></View><AppText style={styles.saveText}>Save {money(saved)} · {bundle.duration_minutes} min</AppText></View><Pressable onPress={() => bookBundle(bundle)} style={[styles.bookButton, compact && styles.bookButtonCompact]}><AppText style={styles.bookText}>Book</AppText></Pressable></View></View>; })}</View>}
             </>
           )}
         </ScrollView>
@@ -151,8 +184,10 @@ const styles = StyleSheet.create({
   backButton: { width: 42, height: 42, borderRadius: 14, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   favoriteButton: { width: 42, height: 42, borderRadius: 14, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   salonHero: { flexDirection: "row", alignItems: "center", marginBottom: 18 },
+  salonHeroCompact: { alignItems: "flex-start" },
   salonLogo: { width: 92, height: 92, borderRadius: 24, backgroundColor: colors.ivoryDeep, alignItems: "center", justifyContent: "center" },
-  heroCopy: { flex: 1, paddingLeft: 14 },
+  salonLogoCompact: { width: 76, height: 76, borderRadius: 20 },
+  heroCopy: { flex: 1, minWidth: 0, paddingLeft: 14 },
   salonName: { color: colors.ink, fontSize: 21, fontWeight: "900", lineHeight: 26 },
   ratingRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 6 },
   ratingValue: { color: colors.ink, fontSize: 11, fontWeight: "900" },
@@ -184,8 +219,9 @@ const styles = StyleSheet.create({
   categoryTextActive: { color: colors.champagneLight },
   serviceList: { gap: 9 },
   serviceCard: { backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: 11, flexDirection: "row", alignItems: "center", ...shadows.card },
+  serviceCardCompact: { flexWrap: "wrap", alignItems: "flex-start" },
   serviceIcon: { width: 54, height: 68, borderRadius: 16, backgroundColor: colors.ivoryDeep, alignItems: "center", justifyContent: "center" },
-  serviceCopy: { flex: 1, paddingHorizontal: 10 },
+  serviceCopy: { flex: 1, minWidth: 0, paddingHorizontal: 10 },
   serviceName: { color: colors.ink, fontSize: 13, fontWeight: "900" },
   serviceDescription: { color: colors.muted, fontSize: 9, lineHeight: 14, marginTop: 3 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 5 },
@@ -193,6 +229,7 @@ const styles = StyleSheet.create({
   metaDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: colors.muted, marginHorizontal: 2 },
   price: { color: colors.plum, fontSize: 13, fontWeight: "900", marginTop: 5 },
   bookButton: { minWidth: 58, height: 38, paddingHorizontal: 11, borderRadius: 13, backgroundColor: colors.plum, alignItems: "center", justifyContent: "center" },
+  bookButtonCompact: { flex: 1, width: "100%", marginTop: 10 },
   bookText: { color: colors.white, fontSize: 10, fontWeight: "900" },
   bundleList: { gap: 10 },
   bundleCard: { backgroundColor: "#FFF7ED", borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: 14, ...shadows.card },
@@ -205,6 +242,7 @@ const styles = StyleSheet.create({
   miniTag: { backgroundColor: colors.ivoryDeep, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 5 },
   miniTagText: { color: colors.plum, fontSize: 8, fontWeight: "800" },
   bundleBottom: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginTop: 13 },
+  bundleBottomCompact: { flexDirection: "column", alignItems: "stretch", gap: 10 },
   bundlePriceRow: { flexDirection: "row", alignItems: "baseline", gap: 6 },
   bundlePrice: { color: colors.plum, fontSize: 15, fontWeight: "900" },
   originalPrice: { color: colors.muted, fontSize: 9, textDecorationLine: "line-through" },
@@ -219,4 +257,6 @@ const styles = StyleSheet.create({
   bottomSubtitle: { color: "#D8CADC", fontSize: 8, marginTop: 2 },
   loading: { flex: 1, alignItems: "center", justifyContent: "center", gap: 9 },
   loadingText: { color: colors.muted, fontSize: 12 },
+  loadMore: { alignItems: "center", justifyContent: "center", gap: 7, paddingVertical: 18 },
+  endText: { color: colors.muted, fontSize: 10, textAlign: "center", paddingVertical: 10 },
 });
