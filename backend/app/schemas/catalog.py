@@ -45,3 +45,11 @@ class BundleResponse(BaseModel):
     duration_minutes: int
     is_active: bool
     services: list[BundleServiceResponse] = []
+
+
+class PaginatedSalonResponse(BaseModel):
+    items: list[SalonResponse]
+    page: int
+    page_size: int
+    total: int
+    has_more: bool

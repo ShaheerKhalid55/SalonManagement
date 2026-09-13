@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,24 +7,37 @@ from app.core.database import get_db
 from app.dependencies.auth import require_roles
 from app.models.salon import Salon
 from app.models.service import Service
-from app.schemas.service import ServiceCreateRequest, ServiceResponse, ServiceUpdateRequest
+from app.schemas.service import PaginatedServiceResponse, ServiceCreateRequest, ServiceResponse, ServiceUpdateRequest
 
 router = APIRouter(prefix="/api/v1/services", tags=["Services"])
 
 
-@router.get("", response_model=list[ServiceResponse])
+@router.get("", response_model=PaginatedServiceResponse)
 async def list_services(
     salon_id: int | None = None,
     category: str | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=50),
     db: AsyncSession = Depends(get_db),
 ):
     query = select(Service).where(Service.is_active.is_(True))
+    count_query = select(func.count(Service.id)).where(Service.is_active.is_(True))
     if salon_id is not None:
         query = query.where(Service.salon_id == salon_id)
+        count_query = count_query.where(Service.salon_id == salon_id)
     if category:
         query = query.where(Service.category == category)
-    result = await db.execute(query.order_by(Service.name))
-    return list(result.scalars().all())
+        count_query = count_query.where(Service.category == category)
+
+    total = int((await db.execute(count_query)).scalar_one())
+    result = await db.execute(
+        query.order_by(Service.name).offset((page - 1) * page_size).limit(page_size)
+    )
+    items = list(result.scalars().all())
+    return PaginatedServiceResponse(
+        items=items, page=page, page_size=page_size, total=total,
+        has_more=page * page_size < total,
+    )
 
 
 @router.get("/{service_id}", response_model=ServiceResponse)

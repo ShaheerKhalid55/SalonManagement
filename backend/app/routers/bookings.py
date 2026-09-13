@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -15,7 +15,7 @@ from app.models.salon import Salon
 from app.models.service import Service
 from app.models.slot import SalonSlot
 from app.models.user import User
-from app.schemas.booking import BookingCreateRequest, BookingItemResponse, BookingResponse
+from app.schemas.booking import BookingCreateRequest, BookingItemResponse, BookingResponse, PaginatedBookingResponse
 from app.services.wallet import debit_wallet_for_booking, refund_booking
 from app.services.referral import complete_referral_for_booking
 from app.services.notifications import create_notification, send_push_notification
@@ -148,16 +148,30 @@ async def create_booking(
     await send_push_notification(db, notification)
     return await response_for_booking(booking, db)
 
-@router.get("", response_model=list[BookingResponse])
+@router.get("", response_model=PaginatedBookingResponse)
 async def list_my_bookings(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=50),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    count = await db.execute(
+        select(func.count(Booking.id)).where(Booking.customer_id == current_user.id)
+    )
+    total = int(count.scalar_one())
     result = await db.execute(
-        select(Booking).where(Booking.customer_id == current_user.id).order_by(Booking.created_at.desc())
+        select(Booking)
+        .where(Booking.customer_id == current_user.id)
+        .order_by(Booking.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
     )
     bookings = list(result.scalars().all())
-    return [await response_for_booking(b, db) for b in bookings]
+    items = [await response_for_booking(b, db) for b in bookings]
+    return PaginatedBookingResponse(
+        items=items, page=page, page_size=page_size, total=total,
+        has_more=page * page_size < total,
+    )
 
 @router.get("/{booking_id}", response_model=BookingResponse)
 async def get_booking(

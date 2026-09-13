@@ -39,3 +39,11 @@ class BookingResponse(BaseModel):
     items: list[BookingItemResponse] = []
 
     model_config = {"from_attributes": True}
+
+
+class PaginatedBookingResponse(BaseModel):
+    items: list[BookingResponse]
+    page: int
+    page_size: int
+    total: int
+    has_more: bool

@@ -31,3 +31,11 @@ class ServiceResponse(BaseModel):
     is_active: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PaginatedServiceResponse(BaseModel):
+    items: list[ServiceResponse]
+    page: int
+    page_size: int
+    total: int
+    has_more: bool
