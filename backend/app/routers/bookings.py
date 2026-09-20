@@ -3,7 +3,7 @@ from decimal import Decimal
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -143,10 +143,31 @@ async def create_booking(
         },
     )
 
+    # The slot already identifies the assigned agent. Keep the assignment as an
+    # in-app notification so the agent sees the booking immediately, even when
+    # push delivery is unavailable.
+    agent_notification = await create_notification(
+        db=db,
+        user_id=booking.agent_id,
+        booking_id=booking.id,
+        notification_type="APPOINTMENT_ASSIGNED",
+        title="New appointment assigned",
+        message=(
+            f"A new appointment at {salon.name} is assigned to you for "
+            f"{booking.booking_date.isoformat()} at {booking.start_time.strftime('%I:%M %p').lstrip('0')}."
+        ),
+        data={
+            "screen": "agent_booking",
+            "booking_id": booking.id,
+            "salon_id": booking.salon_id,
+        },
+    )
+
     await db.commit()
     await db.refresh(booking)
     # Push is intentionally sent after the booking transaction commits.
     await send_push_notification(db, notification)
+    await send_push_notification(db, agent_notification)
     return await response_for_booking(booking, db)
 
 @router.get("", response_model=PaginatedBookingResponse)
@@ -363,8 +384,31 @@ async def start_booking(
         )
 
     booking.status = "IN_PROGRESS"
+
+    # Keep the state change visible in the notification center for both sides.
+    agent_notification = await create_notification(
+        db=db,
+        user_id=current_user.id,
+        booking_id=booking.id,
+        notification_type="SERVICE_STARTED",
+        title="Service started",
+        message=f"Service for {booking.booking_number} is now in progress.",
+        data={"screen": "agent_booking", "booking_id": booking.id},
+    )
+    customer_notification = await create_notification(
+        db=db,
+        user_id=booking.customer_id,
+        booking_id=booking.id,
+        notification_type="SERVICE_STARTED_CUSTOMER",
+        title="Your service has started",
+        message=f"Your appointment at {booking.booking_date.isoformat()} is now in progress.",
+        data={"screen": "booking", "booking_id": booking.id},
+    )
+
     await db.commit()
     await db.refresh(booking)
+    await send_push_notification(db, agent_notification)
+    await send_push_notification(db, customer_notification)
     return await response_for_booking(booking, db)
 
 @router.post("/{booking_id}/complete", response_model=BookingResponse)
@@ -390,7 +434,41 @@ async def complete_booking(
         )
     booking.status = "COMPLETED"
     booking.completed_at = datetime.now(timezone.utc)
+
+    # The agent earns the booking total when the service is completed. The
+    # wallet service creates an auditable transaction with before/after balance.
+    from app.services.wallet import credit_wallet
+    await credit_wallet(
+        db,
+        current_user.id,
+        Decimal(booking.total),
+        "SERVICE_EARNING",
+        f"Earnings for completed booking {booking.booking_number}",
+    )
+
     await complete_referral_for_booking(db, booking)
+
+    agent_notification = await create_notification(
+        db=db,
+        user_id=current_user.id,
+        booking_id=booking.id,
+        notification_type="SERVICE_COMPLETED",
+        title="Service completed",
+        message=f"Booking {booking.booking_number} has been completed. Your wallet was updated.",
+        data={"screen": "agent_booking", "booking_id": booking.id},
+    )
+    customer_notification = await create_notification(
+        db=db,
+        user_id=booking.customer_id,
+        booking_id=booking.id,
+        notification_type="SERVICE_COMPLETED_CUSTOMER",
+        title="Appointment completed",
+        message=f"Your appointment {booking.booking_number} has been completed.",
+        data={"screen": "booking", "booking_id": booking.id},
+    )
+
     await db.commit()
     await db.refresh(booking)
+    await send_push_notification(db, agent_notification)
+    await send_push_notification(db, customer_notification)
     return await response_for_booking(booking, db)
