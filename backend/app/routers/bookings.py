@@ -173,6 +173,60 @@ async def list_my_bookings(
         has_more=page * page_size < total,
     )
 
+@router.get("/agent", response_model=PaginatedBookingResponse)
+async def list_agent_bookings(
+    status_filter: str | None = Query(default=None, alias="status"),
+    search: str | None = Query(default=None, max_length=100),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles("AGENT")),
+):
+    """Return only bookings assigned to the authenticated agent."""
+    query_filter = [Booking.agent_id == current_user.id]
+
+    status_key = (status_filter or "").upper()
+    status_map = {
+        "UPCOMING": ("PENDING", "CONFIRMED"),
+        "IN_PROGRESS": ("IN_PROGRESS",),
+        "COMPLETED": ("COMPLETED",),
+        "CANCELLED": ("CANCELLED", "CANCELED"),
+    }
+    if status_key in status_map:
+        query_filter.append(Booking.status.in_(status_map[status_key]))
+    elif status_filter:
+        query_filter.append(Booking.status == status_key)
+
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        query_filter.append(
+            or_(
+                Booking.booking_number.ilike(term),
+                User.name.ilike(term),
+            )
+        )
+
+    count = await db.execute(select(func.count(Booking.id)).join(User, User.id == Booking.customer_id).where(*query_filter))
+    total = int(count.scalar_one())
+
+    result = await db.execute(
+        select(Booking)
+        .join(User, User.id == Booking.customer_id)
+        .where(*query_filter)
+        .order_by(Booking.booking_date.desc(), Booking.start_time.desc(), Booking.id.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    bookings = list(result.scalars().all())
+    items = [await response_for_booking(b, db) for b in bookings]
+    return PaginatedBookingResponse(
+        items=items,
+        page=page,
+        page_size=page_size,
+        total=total,
+        has_more=page * page_size < total,
+    )
+
 @router.get("/{booking_id}", response_model=BookingResponse)
 async def get_booking(
     booking_id: int,
