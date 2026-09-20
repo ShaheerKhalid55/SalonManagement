@@ -323,15 +323,20 @@ async def get_booking(
 async def cancel_booking(
     booking_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("CUSTOMER")),
+    current_user: User = Depends(get_current_user),
 ):
     # Lock booking to avoid two cancellation/refund requests racing.
     result = await db.execute(select(Booking).where(Booking.id == booking_id).with_for_update())
     booking = result.scalar_one_or_none()
     if booking is None:
         raise HTTPException(status_code=404, detail="Booking not found")
-    if booking.customer_id != current_user.id:
+
+    if current_user.role not in {"CUSTOMER", "AGENT"}:
         raise HTTPException(status_code=403, detail="You cannot cancel this booking")
+    if current_user.role == "CUSTOMER" and booking.customer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You cannot cancel this booking")
+    if current_user.role == "AGENT" and booking.agent_id != current_user.id:
+        raise HTTPException(status_code=403, detail="This booking is not assigned to you")
     if booking.status not in {"PENDING", "CONFIRMED"}:
         raise HTTPException(status_code=400, detail="Booking cannot be cancelled")
 
@@ -343,8 +348,32 @@ async def cancel_booking(
         await refund_booking(db, booking)
 
     booking.status = "CANCELLED"
+
+    if current_user.role == "AGENT":
+        notification = await create_notification(
+            db=db,
+            user_id=booking.customer_id,
+            booking_id=booking.id,
+            notification_type="BOOKING_CANCELLED_AGENT",
+            title="Appointment cancelled",
+            message=f"Your appointment {booking.booking_number} was cancelled by the assigned agent.",
+            data={"screen": "booking", "booking_id": booking.id},
+        )
+    else:
+        notification = await create_notification(
+            db=db,
+            user_id=booking.agent_id,
+            booking_id=booking.id,
+            notification_type="BOOKING_CANCELLED_CUSTOMER",
+            title="Appointment cancelled",
+            message=f"Booking {booking.booking_number} was cancelled by the customer.",
+            data={"screen": "agent_booking", "booking_id": booking.id},
+        ) if booking.agent_id else None
+
     await db.commit()
     await db.refresh(booking)
+    if notification is not None:
+        await send_push_notification(db, notification)
     return await response_for_booking(booking, db)
 
 @router.post("/{booking_id}/start", response_model=BookingResponse)
