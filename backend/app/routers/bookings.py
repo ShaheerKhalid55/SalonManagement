@@ -16,6 +16,7 @@ from app.models.service import Service
 from app.models.slot import SalonSlot
 from app.models.user import User
 from app.schemas.booking import BookingCreateRequest, BookingItemResponse, BookingResponse, PaginatedBookingResponse
+from app.schemas.dashboard import AgentAppointmentResponse
 from app.services.wallet import debit_wallet_for_booking, refund_booking
 from app.services.referral import complete_referral_for_booking
 from app.services.notifications import create_notification, send_push_notification
@@ -227,6 +228,61 @@ async def list_agent_bookings(
         has_more=page * page_size < total,
     )
 
+@router.get("/agent/current-booking", response_model=AgentAppointmentResponse | None)
+async def get_agent_current_booking(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles("AGENT")),
+):
+    """Return the appointment currently being worked on by the authenticated agent.
+
+    The response intentionally uses the compact agent-appointment shape so the
+    Home screen can render customer and service information without a second
+    request. If there is no IN_PROGRESS booking, the endpoint returns null.
+    """
+    result = await db.execute(
+        select(
+            Booking.id,
+            Booking.booking_number,
+            Booking.customer_id,
+            User.name,
+            Booking.booking_date,
+            Booking.start_time,
+            Booking.end_time,
+            Booking.total,
+            Booking.status,
+        )
+        .join(User, User.id == Booking.customer_id)
+        .where(
+            Booking.agent_id == current_user.id,
+            Booking.status == "IN_PROGRESS",
+        )
+        .order_by(Booking.booking_date, Booking.start_time, Booking.id)
+        .limit(1)
+    )
+    row = result.first()
+    if row is None:
+        return None
+
+    items_result = await db.execute(
+        select(BookingItem.name)
+        .where(BookingItem.booking_id == row.id)
+        .order_by(BookingItem.id)
+    )
+    service_summary = ", ".join(name for (name,) in items_result.all())
+
+    return {
+        "booking_id": row.id,
+        "booking_number": row.booking_number,
+        "customer_id": row.customer_id,
+        "customer_name": row.name,
+        "service_summary": service_summary,
+        "booking_date": row.booking_date,
+        "start_time": row.start_time,
+        "end_time": row.end_time,
+        "total": row.total,
+        "status": row.status,
+    }
+
 @router.get("/{booking_id}", response_model=BookingResponse)
 async def get_booking(
     booking_id: int,
@@ -276,13 +332,36 @@ async def start_booking(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_roles("AGENT")),
 ):
-    booking = await db.get(Booking, booking_id)
+    # Lock the booking so two rapid start requests cannot both mutate it.
+    result = await db.execute(
+        select(Booking)
+        .where(Booking.id == booking_id)
+        .with_for_update()
+    )
+    booking = result.scalar_one_or_none()
     if booking is None:
         raise HTTPException(status_code=404, detail="Booking not found")
     if booking.agent_id != current_user.id:
         raise HTTPException(status_code=403, detail="This booking is not assigned to you")
     if booking.status != "CONFIRMED":
         raise HTTPException(status_code=400, detail="Booking cannot be started")
+
+    # MVP rule: one agent can work on only one appointment at a time.
+    active_result = await db.execute(
+        select(Booking.id)
+        .where(
+            Booking.agent_id == current_user.id,
+            Booking.status == "IN_PROGRESS",
+            Booking.id != booking.id,
+        )
+        .limit(1)
+    )
+    if active_result.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="You already have an appointment in progress. Complete it before starting another.",
+        )
+
     booking.status = "IN_PROGRESS"
     await db.commit()
     await db.refresh(booking)
@@ -294,13 +373,21 @@ async def complete_booking(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_roles("AGENT")),
 ):
-    booking = await db.get(Booking, booking_id)
+    result = await db.execute(
+        select(Booking)
+        .where(Booking.id == booking_id)
+        .with_for_update()
+    )
+    booking = result.scalar_one_or_none()
     if booking is None:
         raise HTTPException(status_code=404, detail="Booking not found")
     if booking.agent_id != current_user.id:
         raise HTTPException(status_code=403, detail="This booking is not assigned to you")
-    if booking.status not in {"CONFIRMED", "IN_PROGRESS"}:
-        raise HTTPException(status_code=400, detail="Booking cannot be completed")
+    if booking.status != "IN_PROGRESS":
+        raise HTTPException(
+            status_code=400,
+            detail="Booking must be in progress before it can be completed",
+        )
     booking.status = "COMPLETED"
     booking.completed_at = datetime.now(timezone.utc)
     await complete_referral_for_booking(db, booking)
